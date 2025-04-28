@@ -66,8 +66,7 @@ const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
           </div>
           <Progress
             value={node.battery}
-            className="h-1.5"
-            indicatorClassName={batteryColor}
+            className={`h-1.5 ${batteryColor}`}
           />
         </div>
 
@@ -78,8 +77,7 @@ const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
           </div>
           <Progress
             value={node.signalStrength}
-            className="h-1.5"
-            indicatorClassName={signalColor}
+            className={`h-1.5 ${signalColor}`}
           />
         </div>
 

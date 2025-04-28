@@ -41,8 +41,7 @@ const NetworkStatus: React.FC<NetworkStatusProps> = ({ status }) => {
           </div>
           <Progress
             value={status.networkHealth}
-            className="h-1.5"
-            indicatorClassName={networkHealthColor}
+            className={`h-1.5 ${networkHealthColor}`}
           />
         </div>
       </CardContent>

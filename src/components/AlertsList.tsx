@@ -46,7 +46,7 @@ const AlertsList: React.FC<AlertsListProps> = ({ alerts }) => {
       case "suspicious_activity":
         return "Suspicious Activity";
       default:
-        return type.replace("_", " ");
+        return type.replace(/_/g, " ");
     }
   };
 
@@ -58,7 +58,7 @@ const AlertsList: React.FC<AlertsListProps> = ({ alerts }) => {
       <CardContent className="px-2">
         <div className="space-y-2">
           {recentAlerts.map((alert) => {
-            const nodeNumber = alert.nodeId.replace("node", "");
+            const nodeNumber = alert.nodeId.includes("node") ? alert.nodeId.replace("node", "") : alert.nodeId;
             return (
               <div
                 key={alert.id}

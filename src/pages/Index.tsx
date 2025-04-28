@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import NetworkStatus from "@/components/NetworkStatus";
 import { AddNodeButton, AddNodeModal } from "@/components/AddNodeModal";
@@ -8,10 +7,10 @@ import DeploymentMap from "@/components/DeploymentMap";
 import NodeDetails from "@/components/NodeDetails";
 import { generateMockAlert } from "@/lib/mockData";
 import { toast } from "@/components/ui/use-toast";
-import { Alert, Node } from "@/lib/types";
+import { Alert, Node, AlertType } from "@/lib/types";
 import { useFirebase } from "@/hooks/useFirebase";
 import { useNavigate, useLocation } from "react-router-dom";
-import { addAlert } from "@/lib/firebase";
+import { updateNodeAlert } from "@/lib/firebase";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -31,7 +30,8 @@ const Index = () => {
     selectedNode: firebaseSelectedNode,
     loading,
     error,
-    handleAddNode
+    handleAddNode,
+    handleUpdateNodeAlert
   } = useFirebase({
     seedDataIfEmpty: true,
     nodeId: nodeId || undefined
@@ -53,27 +53,39 @@ const Index = () => {
     }
   }, [nodeId, firebaseSelectedNode, nodes]);
 
-  // Mock the incoming alerts (this could be replaced with real-time alerts from Firebase)
+  // We'll keep the mock alert generation for demonstration purposes
+  // In a real implementation, alerts would come directly from backend/firebase
   useEffect(() => {
-    // Generate new alert every 45-90 seconds
+    // Generate new alert simulation every 45-90 seconds
     const alertInterval = setInterval(() => {
-      if (Math.random() > 0.5) {
-        const newAlert = generateMockAlert();
+      if (Math.random() > 0.5 && nodes.length > 0) {
+        // Select random node and alert type
+        const randomNode = nodes[Math.floor(Math.random() * nodes.length)];
+        const alertTypes: AlertType[] = ["gun_sound", "footsteps", "motion", "whisper", "suspicious_activity"];
+        const randomType = alertTypes[Math.floor(Math.random() * alertTypes.length)];
         
-        // Add the new alert to Firebase
-        addAlert(newAlert).catch(console.error);
+        // Update the node's alert status in Firebase
+        handleUpdateNodeAlert(randomNode.id, randomType, true);
+        
+        // Determine severity for toast notifications
+        let severity: "critical" | "warning" | "info" = "info";
+        if (randomType === "gun_sound" || randomType === "suspicious_activity") {
+          severity = "critical";
+        } else if (randomType === "footsteps" || randomType === "whisper") {
+          severity = "warning";
+        }
         
         // Show toast notification for critical alerts
-        if (newAlert.severity === "critical") {
+        if (severity === "critical") {
           toast({
             title: "Critical Alert",
-            description: `${newAlert.description} - Node ${newAlert.nodeId.replace("node", "")}`,
+            description: `${randomType.replace("_", " ")} - Node ${randomNode.id.replace("node", "")}`,
             variant: "destructive",
           });
-        } else if (newAlert.severity === "warning") {
+        } else if (severity === "warning") {
           toast({
             title: "Warning Alert",
-            description: `${newAlert.description} - Node ${newAlert.nodeId.replace("node", "")}`,
+            description: `${randomType.replace("_", " ")} - Node ${randomNode.id.replace("node", "")}`,
             variant: "default",
           });
         }
@@ -81,7 +93,7 @@ const Index = () => {
     }, 45000 + Math.random() * 45000);
 
     return () => clearInterval(alertInterval);
-  }, []);
+  }, [nodes, handleUpdateNodeAlert]);
 
   // Handle node selection
   const handleSelectNode = (node: Node) => {
@@ -130,6 +142,58 @@ const Index = () => {
     );
   }
 
+  // Create a derived list of active alerts from nodes with active alerts
+  const activeAlerts = nodes.reduce((result: Alert[], node) => {
+    if (!node.alerts) return result;
+    
+    Object.entries(node.alerts).forEach(([type, isActive]) => {
+      if (isActive) {
+        // Determine severity based on alert type
+        let severity: "critical" | "warning" | "info" = "info";
+        if (type === "gun_sound" || type === "suspicious_activity") {
+          severity = "critical";
+        } else if (type === "footsteps" || type === "whisper") {
+          severity = "warning";
+        }
+        
+        // Format description based on alert type
+        let description = type.replace(/_/g, " ");
+        switch (type) {
+          case "gun_sound": 
+            description = "Gunshots Detected"; 
+            break;
+          case "footsteps": 
+            description = "Footsteps Detected"; 
+            break;
+          case "whisper": 
+            description = "Whispers Detected"; 
+            break;
+          case "motion": 
+            description = "Motion Detected"; 
+            break;
+          case "suspicious_activity": 
+            description = "Suspicious Activity"; 
+            break;
+        }
+        
+        result.push({
+          id: `${node.id}-${type}-${Date.now()}`,
+          type: type as AlertType,
+          nodeId: node.id,
+          timestamp: new Date(),
+          description,
+          severity,
+          acknowledged: false
+        });
+      }
+    });
+    
+    return result;
+  }, []);
+  
+  // Combine historical alerts with active alerts
+  const combinedAlerts = [...activeAlerts, ...alerts];
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="container py-6 space-y-6">
@@ -154,7 +218,7 @@ const Index = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <NetworkStatus status={networkStatus} />
           <AddNodeButton onClick={() => setIsAddNodeModalOpen(true)} />
-          <AlertsList alerts={alerts} />
+          <AlertsList alerts={combinedAlerts} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -172,7 +236,7 @@ const Index = () => {
         </div>
 
         <div>
-          <ActivityLog alerts={alerts} />
+          <ActivityLog alerts={combinedAlerts} />
         </div>
       </div>
 

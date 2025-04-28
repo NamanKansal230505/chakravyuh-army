@@ -12,6 +12,13 @@ export interface Node {
     lng: number;
   };
   type: "standard" | "advanced" | "gateway";
+  alerts?: {
+    gun_sound: boolean;
+    footsteps: boolean;
+    motion: boolean;
+    whisper: boolean;
+    suspicious_activity: boolean;
+  };
 }
 
 export type AlertType = 

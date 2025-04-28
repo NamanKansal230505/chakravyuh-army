@@ -1,6 +1,6 @@
 
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, onValue, push, set, remove } from "firebase/database";
+import { getDatabase, ref, onValue, push, set, remove, update } from "firebase/database";
 import { Node, Alert, NetworkConnection, NetworkStatus } from "./types";
 
 // Firebase configuration (using the provided database URL)
@@ -20,7 +20,7 @@ const database = getDatabase(app);
 
 // References to database paths
 const nodesRef = ref(database, "nodes");
-const alertsRef = ref(database, "alerts");
+const alertHistoryRef = ref(database, "alertHistory");
 const connectionsRef = ref(database, "connections");
 const networkStatusRef = ref(database, "networkStatus");
 
@@ -33,13 +33,30 @@ export const getNodeRef = (nodeId: string) => {
 export const subscribeToNodes = (callback: (nodes: Node[]) => void) => {
   const unsubscribe = onValue(nodesRef, (snapshot) => {
     const data = snapshot.val() || {};
-    const nodesList = Object.values(data) as Node[];
+    const nodesList: Node[] = [];
     
-    // Ensure date objects are properly parsed
-    nodesList.forEach((node: any) => {
-      if (node.lastActivity) {
-        node.lastActivity = new Date(node.lastActivity);
-      }
+    // Convert object to array and process nodes
+    Object.entries(data).forEach(([nodeId, nodeData]: [string, any]) => {
+      const node: Node = {
+        id: nodeId,
+        name: nodeData.name || `Node #${nodeId.replace('node', '')}`,
+        sector: nodeData.sector || 'Unknown Sector',
+        status: nodeData.status || 'online',
+        battery: nodeData.battery || 100,
+        signalStrength: nodeData.signalStrength || 100,
+        lastActivity: nodeData.lastActivity ? new Date(nodeData.lastActivity) : new Date(),
+        location: nodeData.location || { lat: 21.15, lng: 79.08 },
+        type: nodeData.type || 'standard',
+        alerts: nodeData.alerts || {
+          gun_sound: false,
+          footsteps: false,
+          motion: false,
+          whisper: false,
+          suspicious_activity: false
+        }
+      };
+      
+      nodesList.push(node);
     });
     
     callback(nodesList);
@@ -49,7 +66,7 @@ export const subscribeToNodes = (callback: (nodes: Node[]) => void) => {
 };
 
 export const subscribeToAlerts = (callback: (alerts: Alert[]) => void) => {
-  const unsubscribe = onValue(alertsRef, (snapshot) => {
+  const unsubscribe = onValue(alertHistoryRef, (snapshot) => {
     const data = snapshot.val() || {};
     const alertsList = Object.values(data) as Alert[];
     
@@ -90,11 +107,27 @@ export const subscribeToSpecificNode = (nodeId: string, callback: (node: Node | 
   const unsubscribe = onValue(nodeRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
-      // Ensure date objects are properly parsed
-      if (data.lastActivity) {
-        data.lastActivity = new Date(data.lastActivity);
-      }
-      callback(data as Node);
+      // Create a properly formatted node object
+      const node: Node = {
+        id: nodeId,
+        name: data.name || `Node #${nodeId.replace('node', '')}`,
+        sector: data.sector || 'Unknown Sector',
+        status: data.status || 'online',
+        battery: data.battery || 100,
+        signalStrength: data.signalStrength || 100,
+        lastActivity: data.lastActivity ? new Date(data.lastActivity) : new Date(),
+        location: data.location || { lat: 21.15, lng: 79.08 },
+        type: data.type || 'standard',
+        alerts: data.alerts || {
+          gun_sound: false,
+          footsteps: false,
+          motion: false,
+          whisper: false,
+          suspicious_activity: false
+        }
+      };
+      
+      callback(node);
     } else {
       callback(null);
     }
@@ -106,8 +139,21 @@ export const subscribeToSpecificNode = (nodeId: string, callback: (node: Node | 
 export const addNewNode = async (node: Node) => {
   const nodeRef = ref(database, `nodes/${node.id}`);
   await set(nodeRef, {
-    ...node,
-    lastActivity: node.lastActivity.toISOString()
+    name: node.name,
+    sector: node.sector,
+    status: node.status,
+    battery: node.battery,
+    signalStrength: node.signalStrength,
+    lastActivity: node.lastActivity.toISOString(),
+    location: node.location,
+    type: node.type,
+    alerts: {
+      gun_sound: false,
+      footsteps: false,
+      motion: false,
+      whisper: false,
+      suspicious_activity: false
+    }
   });
   
   // Update network status
@@ -128,12 +174,76 @@ export const addNewNode = async (node: Node) => {
   return node;
 };
 
+// New function to update node alert status
+export const updateNodeAlert = async (nodeId: string, alertType: string, isActive: boolean) => {
+  const nodeAlertRef = ref(database, `nodes/${nodeId}/alerts/${alertType}`);
+  await set(nodeAlertRef, isActive);
+  
+  // If alert is active, add to alert history
+  if (isActive) {
+    const alertHistoryEntryRef = push(alertHistoryRef);
+    const now = new Date();
+    
+    const alertSeverity = getAlertSeverity(alertType);
+    const alertDescription = getAlertDescription(alertType);
+    
+    await set(alertHistoryEntryRef, {
+      id: alertHistoryEntryRef.key,
+      type: alertType,
+      nodeId: nodeId,
+      timestamp: now.toISOString(),
+      description: alertDescription,
+      severity: alertSeverity,
+      acknowledged: false
+    });
+  }
+  
+  return { nodeId, alertType, isActive };
+};
+
+// Helper function to get alert severity based on type
+const getAlertSeverity = (alertType: string): "critical" | "warning" | "info" => {
+  switch (alertType) {
+    case "gun_sound":
+    case "suspicious_activity":
+      return "critical";
+    case "footsteps":
+    case "whisper":
+      return "warning";
+    default:
+      return "info";
+  }
+};
+
+// Helper function to get alert description based on type
+const getAlertDescription = (alertType: string): string => {
+  switch (alertType) {
+    case "gun_sound":
+      return "Gunshots Detected";
+    case "footsteps":
+      return "Footsteps Detected";
+    case "whisper":
+      return "Whispers Detected";
+    case "motion":
+      return "Motion Detected";
+    case "suspicious_activity":
+      return "Suspicious Activity";
+    default:
+      return alertType.replace(/_/g, " ");
+  }
+};
+
 export const addAlert = async (alert: Alert) => {
-  const alertRef = ref(database, `alerts/${alert.id}`);
+  // First update the node's alert status
+  await updateNodeAlert(alert.nodeId, alert.type, true);
+  
+  // Then add to alert history
+  const alertRef = ref(database, `alertHistory/${alert.id}`);
   await set(alertRef, {
     ...alert,
     timestamp: alert.timestamp.toISOString()
   });
+  
   return alert;
 };
 
@@ -148,20 +258,35 @@ export const seedInitialData = async () => {
     // Import mock data
     const { mockNodes, mockAlerts, mockConnections, mockNetworkStatus } = await import('./mockData');
     
-    // Seed nodes
+    // Seed nodes with alert properties
     for (const node of mockNodes) {
-      await set(ref(database, `nodes/${node.id}`), {
+      // Add alerts property to each node
+      const nodeWithAlerts = {
         ...node,
-        lastActivity: node.lastActivity.toISOString()
-      });
+        lastActivity: node.lastActivity.toISOString(),
+        alerts: {
+          gun_sound: false,
+          footsteps: false,
+          motion: false,
+          whisper: false,
+          suspicious_activity: false
+        }
+      };
+      
+      await set(ref(database, `nodes/${node.id}`), nodeWithAlerts);
     }
     
-    // Seed alerts
+    // Seed alert history
     for (const alert of mockAlerts) {
-      await set(ref(database, `alerts/${alert.id}`), {
+      await set(ref(database, `alertHistory/${alert.id}`), {
         ...alert,
         timestamp: alert.timestamp.toISOString()
       });
+      
+      // Also set alert flag on the corresponding node
+      if (!alert.acknowledged) {
+        await set(ref(database, `nodes/${alert.nodeId}/alerts/${alert.type}`), true);
+      }
     }
     
     // Seed connections

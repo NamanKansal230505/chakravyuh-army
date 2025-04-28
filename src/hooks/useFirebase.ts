@@ -9,9 +9,10 @@ import {
   addNewNode,
   addAlert,
   addConnection,
+  updateNodeAlert,
   seedInitialData
 } from '@/lib/firebase';
-import { Node, Alert, NetworkConnection, NetworkStatus } from '@/lib/types';
+import { Node, Alert, NetworkConnection, NetworkStatus, AlertType } from '@/lib/types';
 
 type UseFirebaseOptions = {
   seedDataIfEmpty?: boolean;
@@ -125,6 +126,17 @@ export function useFirebase(options: UseFirebaseOptions = {}) {
       throw err;
     }
   };
+  
+  // New function to handle updating node alerts
+  const handleUpdateNodeAlert = async (nodeId: string, alertType: AlertType, isActive: boolean) => {
+    try {
+      await updateNodeAlert(nodeId, alertType, isActive);
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to update node alert'));
+      return false;
+    }
+  };
 
   return {
     nodes,
@@ -134,6 +146,7 @@ export function useFirebase(options: UseFirebaseOptions = {}) {
     selectedNode,
     loading,
     error,
-    handleAddNode
+    handleAddNode,
+    handleUpdateNodeAlert
   };
 }

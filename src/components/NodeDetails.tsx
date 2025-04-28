@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Node } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
+import { AlertTriangle } from "lucide-react";
 
 interface NodeDetailsProps {
   node: Node | null;
@@ -48,6 +49,9 @@ const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
       ? "status-badge status-badge-warning"
       : "status-badge status-badge-critical";
 
+  // Check if any alerts are active
+  const hasActiveAlerts = node.alerts && Object.values(node.alerts).some(alert => alert);
+
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
@@ -80,6 +84,25 @@ const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
             className={`h-1.5 ${signalColor}`}
           />
         </div>
+
+        {hasActiveAlerts && (
+          <div className="bg-alert-critical/10 p-2 rounded-md border border-alert-critical/20">
+            <div className="flex items-center gap-2 text-xs text-alert-critical">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="font-medium">Active Alerts</span>
+            </div>
+            <ul className="mt-2 text-xs space-y-1">
+              {node.alerts && Object.entries(node.alerts).map(([alertType, isActive]) => (
+                isActive && (
+                  <li key={alertType} className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-alert-critical"></span>
+                    {alertType.replace('_', ' ')}
+                  </li>
+                )
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="pt-2 grid grid-cols-2 gap-2 text-xs">
           <div>

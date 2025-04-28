@@ -33,11 +33,16 @@ export function useFirebase(options: UseFirebaseOptions = {}) {
 
   // Subscribe to data changes
   useEffect(() => {
+    let unsubscribeNodes: (() => void) | undefined;
+    let unsubscribeAlerts: (() => void) | undefined;
+    let unsubscribeConnections: (() => void) | undefined;
+    let unsubscribeNetworkStatus: (() => void) | undefined;
+
     try {
-      const unsubscribeNodes = subscribeToNodes(setNodes);
-      const unsubscribeAlerts = subscribeToAlerts(setAlerts);
-      const unsubscribeConnections = subscribeToConnections(setConnections);
-      const unsubscribeNetworkStatus = subscribeToNetworkStatus(setNetworkStatus);
+      unsubscribeNodes = subscribeToNodes(setNodes);
+      unsubscribeAlerts = subscribeToAlerts(setAlerts);
+      unsubscribeConnections = subscribeToConnections(setConnections);
+      unsubscribeNetworkStatus = subscribeToNetworkStatus(setNetworkStatus);
       
       // Set loading to false after initial data is loaded
       setTimeout(() => setLoading(false), 1000);
@@ -50,34 +55,36 @@ export function useFirebase(options: UseFirebaseOptions = {}) {
           }
         }, 2000);
       }
-      
-      // Cleanup subscriptions
-      return () => {
-        unsubscribeNodes();
-        unsubscribeAlerts();
-        unsubscribeConnections();
-        unsubscribeNetworkStatus();
-      };
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Unknown error occurred'));
       setLoading(false);
     }
-  }, [options.seedDataIfEmpty]);
+    
+    // Cleanup subscriptions
+    return () => {
+      if (unsubscribeNodes) unsubscribeNodes();
+      if (unsubscribeAlerts) unsubscribeAlerts();
+      if (unsubscribeConnections) unsubscribeConnections();
+      if (unsubscribeNetworkStatus) unsubscribeNetworkStatus();
+    };
+  }, [options.seedDataIfEmpty, nodes.length]);
   
   // Subscribe to specific node if nodeId is provided
   useEffect(() => {
+    let unsubscribeNode: (() => void) | undefined;
+    
     if (!options.nodeId) return;
     
     try {
-      const unsubscribeNode = subscribeToSpecificNode(options.nodeId, setSelectedNode);
-      
-      // Cleanup subscription
-      return () => {
-        unsubscribeNode();
-      };
+      unsubscribeNode = subscribeToSpecificNode(options.nodeId, setSelectedNode);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Unknown error occurred'));
     }
+    
+    // Cleanup subscription
+    return () => {
+      if (unsubscribeNode) unsubscribeNode();
+    };
   }, [options.nodeId]);
 
   // Handle node addition

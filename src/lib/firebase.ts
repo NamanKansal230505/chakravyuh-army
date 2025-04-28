@@ -3,13 +3,13 @@ import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue, push, set, remove } from "firebase/database";
 import { Node, Alert, NetworkConnection, NetworkStatus } from "./types";
 
-// Firebase configuration (using a public database)
+// Firebase configuration (using the provided database URL)
 const firebaseConfig = {
   apiKey: "AIzaSyAq9oeMQ4cXZcB5um7yF9AUXGl9YBaND9w", // This is a public demo API key
   authDomain: "shadow-alert-network.firebaseapp.com",
-  databaseURL: "https://shadow-alert-network-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "shadow-alert-network",
-  storageBucket: "shadow-alert-network.appspot.com",
+  databaseURL: "https://saarthi-84622-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "saarthi-84622",
+  storageBucket: "saarthi-84622.appspot.com",
   messagingSenderId: "765432109",
   appId: "1:765432109:web:abcdef1234567890"
 };
@@ -31,7 +31,7 @@ export const getNodeRef = (nodeId: string) => {
 
 // Functions to interact with Firebase
 export const subscribeToNodes = (callback: (nodes: Node[]) => void) => {
-  onValue(nodesRef, (snapshot) => {
+  const unsubscribe = onValue(nodesRef, (snapshot) => {
     const data = snapshot.val() || {};
     const nodesList = Object.values(data) as Node[];
     
@@ -44,10 +44,12 @@ export const subscribeToNodes = (callback: (nodes: Node[]) => void) => {
     
     callback(nodesList);
   });
+  
+  return unsubscribe;
 };
 
 export const subscribeToAlerts = (callback: (alerts: Alert[]) => void) => {
-  onValue(alertsRef, (snapshot) => {
+  const unsubscribe = onValue(alertsRef, (snapshot) => {
     const data = snapshot.val() || {};
     const alertsList = Object.values(data) as Alert[];
     
@@ -60,26 +62,32 @@ export const subscribeToAlerts = (callback: (alerts: Alert[]) => void) => {
     
     callback(alertsList);
   });
+  
+  return unsubscribe;
 };
 
 export const subscribeToConnections = (callback: (connections: NetworkConnection[]) => void) => {
-  onValue(connectionsRef, (snapshot) => {
+  const unsubscribe = onValue(connectionsRef, (snapshot) => {
     const data = snapshot.val() || {};
     const connectionsList = Object.values(data) as NetworkConnection[];
     callback(connectionsList);
   });
+  
+  return unsubscribe;
 };
 
 export const subscribeToNetworkStatus = (callback: (status: NetworkStatus) => void) => {
-  onValue(networkStatusRef, (snapshot) => {
+  const unsubscribe = onValue(networkStatusRef, (snapshot) => {
     const data = snapshot.val() || {};
     callback(data as NetworkStatus);
   });
+  
+  return unsubscribe;
 };
 
 export const subscribeToSpecificNode = (nodeId: string, callback: (node: Node | null) => void) => {
   const nodeRef = ref(database, `nodes/${nodeId}`);
-  onValue(nodeRef, (snapshot) => {
+  const unsubscribe = onValue(nodeRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
       // Ensure date objects are properly parsed
@@ -91,6 +99,8 @@ export const subscribeToSpecificNode = (nodeId: string, callback: (node: Node | 
       callback(null);
     }
   });
+  
+  return unsubscribe;
 };
 
 export const addNewNode = async (node: Node) => {
@@ -101,8 +111,13 @@ export const addNewNode = async (node: Node) => {
   });
   
   // Update network status
-  const statusSnapshot = await Promise.resolve((await onValue(networkStatusRef, () => {})).val() || {});
-  const currentStatus = statusSnapshot as NetworkStatus;
+  const networkStatusSnapshot = await new Promise<any>((resolve) => {
+    onValue(networkStatusRef, (snapshot) => {
+      resolve(snapshot.val() || {});
+    }, { onlyOnce: true });
+  });
+  
+  const currentStatus = networkStatusSnapshot as NetworkStatus;
   
   await set(networkStatusRef, {
     ...currentStatus,

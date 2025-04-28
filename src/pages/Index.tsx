@@ -6,25 +6,62 @@ import AlertsList from "@/components/AlertsList";
 import ActivityLog from "@/components/ActivityLog";
 import DeploymentMap from "@/components/DeploymentMap";
 import NodeDetails from "@/components/NodeDetails";
-import { mockNodes, mockAlerts, mockConnections, mockNetworkStatus, generateMockAlert } from "@/lib/mockData";
+import { generateMockAlert } from "@/lib/mockData";
 import { toast } from "@/components/ui/use-toast";
 import { Alert, Node } from "@/lib/types";
+import { useFirebase } from "@/hooks/useFirebase";
+import { useNavigate, useLocation } from "react-router-dom";
+import { addAlert } from "@/lib/firebase";
 
 const Index = () => {
-  const [nodes, setNodes] = useState<Node[]>(mockNodes);
-  const [alerts, setAlerts] = useState<Alert[]>(mockAlerts);
-  const [networkStatus, setNetworkStatus] = useState(mockNetworkStatus);
-  const [connections, setConnections] = useState(mockConnections);
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isAddNodeModalOpen, setIsAddNodeModalOpen] = useState(false);
+  
+  // Extract node ID from URL if present
+  const nodeIdMatch = location.pathname.match(/^\/node(\d+)$/);
+  const nodeId = nodeIdMatch ? `node${nodeIdMatch[1]}` : null;
 
-  // Mock the incoming alerts
+  // Use our Firebase hook
+  const {
+    nodes,
+    alerts,
+    connections,
+    networkStatus,
+    selectedNode: firebaseSelectedNode,
+    loading,
+    error,
+    handleAddNode
+  } = useFirebase({
+    seedDataIfEmpty: true,
+    nodeId: nodeId || undefined
+  });
+
+  // Local selected node state
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+
+  // Update selected node when Firebase node changes or when URL changes
+  useEffect(() => {
+    if (nodeId && firebaseSelectedNode) {
+      setSelectedNode(firebaseSelectedNode);
+    } else if (nodeId && nodes.length > 0) {
+      // Try to find the node in our nodes array
+      const foundNode = nodes.find(node => node.id === nodeId);
+      if (foundNode) {
+        setSelectedNode(foundNode);
+      }
+    }
+  }, [nodeId, firebaseSelectedNode, nodes]);
+
+  // Mock the incoming alerts (this could be replaced with real-time alerts from Firebase)
   useEffect(() => {
     // Generate new alert every 45-90 seconds
     const alertInterval = setInterval(() => {
       if (Math.random() > 0.5) {
         const newAlert = generateMockAlert();
-        setAlerts(prev => [newAlert, ...prev]);
+        
+        // Add the new alert to Firebase
+        addAlert(newAlert).catch(console.error);
         
         // Show toast notification for critical alerts
         if (newAlert.severity === "critical") {
@@ -50,6 +87,9 @@ const Index = () => {
   const handleSelectNode = (node: Node) => {
     setSelectedNode(node);
     
+    // Update URL to reflect selected node
+    navigate(`/node${node.id.replace("node", "")}`);
+    
     // Display node selection toast
     toast({
       title: `Selected ${node.name}`,
@@ -58,55 +98,57 @@ const Index = () => {
     });
   };
 
-  // Handle new node addition
-  const handleAddNode = (newNode: Node) => {
-    setNodes(prev => [...prev, newNode]);
-    
-    // Add connections to nearby nodes (2 closest nodes)
-    const nearbyNodes = [...nodes]
-      .filter(n => n.id !== newNode.id)
-      .sort((a, b) => {
-        const distA = Math.sqrt(
-          Math.pow(a.location.lat - newNode.location.lat, 2) + 
-          Math.pow(a.location.lng - newNode.location.lng, 2)
-        );
-        const distB = Math.sqrt(
-          Math.pow(b.location.lat - newNode.location.lat, 2) + 
-          Math.pow(b.location.lng - newNode.location.lng, 2)
-        );
-        return distA - distB;
-      })
-      .slice(0, 2);
-    
-    const newConnections = nearbyNodes.map(node => ({
-      source: newNode.id,
-      target: node.id,
-      strength: 80 + Math.floor(Math.random() * 15) // 80-95% strength
-    }));
-    
-    setConnections(prev => [...prev, ...newConnections]);
-    
-    // Update network status
-    setNetworkStatus(prev => ({
-      ...prev,
-      activeNodes: prev.activeNodes + 1,
-      totalNodes: prev.totalNodes + 1
-    }));
-    
-    // Show toast notification
-    toast({
-      title: "Node Deployed",
-      description: `${newNode.name} has been deployed in ${newNode.sector}`,
-      duration: 5000,
-    });
-  };
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="text-xl font-bold">Loading Shadow Alert Network</div>
+          <div className="flex justify-center">
+            <div className="w-8 h-8 border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-md p-6 bg-red-500/10 rounded-lg">
+          <div className="text-xl font-bold text-red-500">Error Loading Data</div>
+          <div className="text-muted-foreground">{error.message}</div>
+          <button
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="container py-6 space-y-6">
-        <header>
-          <h1 className="text-2xl font-bold">Shadow Alert Network</h1>
-          <p className="text-muted-foreground">Army Perimeter Defense System</p>
+        <header className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Shadow Alert Network</h1>
+            <p className="text-muted-foreground">Army Perimeter Defense System</p>
+          </div>
+          {selectedNode && (
+            <button
+              onClick={() => {
+                navigate("/");
+                setSelectedNode(null);
+              }}
+              className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md"
+            >
+              Back to Overview
+            </button>
+          )}
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -33,7 +33,7 @@ const AlertsList: React.FC<AlertsListProps> = ({ alerts }) => {
     }
   };
 
-  const formatAlertType = (type: Alert["type"]) => {
+  const formatAlertType = (type: string) => {
     switch (type) {
       case "gun_sound":
         return "Gunshots Detected";

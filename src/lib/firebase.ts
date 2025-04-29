@@ -1,4 +1,3 @@
-
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue, push, set, remove, update } from "firebase/database";
 import { Node, Alert, NetworkConnection, NetworkStatus } from "./types";
@@ -68,13 +67,22 @@ export const subscribeToNodes = (callback: (nodes: Node[]) => void) => {
 export const subscribeToAlerts = (callback: (alerts: Alert[]) => void) => {
   const unsubscribe = onValue(alertHistoryRef, (snapshot) => {
     const data = snapshot.val() || {};
-    const alertsList = Object.values(data) as Alert[];
+    const alertsList: Alert[] = [];
     
-    // Ensure date objects are properly parsed
-    alertsList.forEach((alert: any) => {
-      if (alert.timestamp) {
-        alert.timestamp = new Date(alert.timestamp);
-      }
+    // Convert object to array and process alerts
+    Object.entries(data).forEach(([alertId, alertData]: [string, any]) => {
+      const alert: Alert = {
+        id: alertId,
+        type: alertData.type || 'unknown',
+        nodeId: alertData.nodeId || '',
+        // Generate a new timestamp on the frontend instead of using Firebase's
+        timestamp: new Date(),
+        description: alertData.description || '',
+        severity: alertData.severity || 'info',
+        acknowledged: alertData.acknowledged || false
+      };
+      
+      alertsList.push(alert);
     });
     
     callback(alertsList);
@@ -179,21 +187,14 @@ export const updateNodeAlert = async (nodeId: string, alertType: string, isActiv
   const nodeAlertRef = ref(database, `nodes/${nodeId}/alerts/${alertType}`);
   await set(nodeAlertRef, isActive);
   
-  // If alert is active, add to alert history
+  // If alert is active, add minimal data to alert history in Firebase
+  // Timestamp will be generated on the frontend
   if (isActive) {
     const alertHistoryEntryRef = push(alertHistoryRef);
-    const now = new Date();
-    
-    const alertSeverity = getAlertSeverity(alertType);
-    const alertDescription = getAlertDescription(alertType);
     
     await set(alertHistoryEntryRef, {
-      id: alertHistoryEntryRef.key,
       type: alertType,
       nodeId: nodeId,
-      timestamp: now.toISOString(),
-      description: alertDescription,
-      severity: alertSeverity,
       acknowledged: false
     });
   }
@@ -237,11 +238,12 @@ export const addAlert = async (alert: Alert) => {
   // First update the node's alert status
   await updateNodeAlert(alert.nodeId, alert.type, true);
   
-  // Then add to alert history
+  // Then add to alert history (without timestamp)
   const alertRef = ref(database, `alertHistory/${alert.id}`);
   await set(alertRef, {
-    ...alert,
-    timestamp: alert.timestamp.toISOString()
+    type: alert.type,
+    nodeId: alert.nodeId,
+    acknowledged: alert.acknowledged
   });
   
   return alert;
@@ -276,11 +278,12 @@ export const seedInitialData = async () => {
       await set(ref(database, `nodes/${node.id}`), nodeWithAlerts);
     }
     
-    // Seed alert history
+    // Seed alert history (without timestamps)
     for (const alert of mockAlerts) {
       await set(ref(database, `alertHistory/${alert.id}`), {
-        ...alert,
-        timestamp: alert.timestamp.toISOString()
+        type: alert.type,
+        nodeId: alert.nodeId,
+        acknowledged: alert.acknowledged
       });
       
       // Also set alert flag on the corresponding node

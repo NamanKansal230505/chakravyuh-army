@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   subscribeToNodes, 
@@ -41,7 +40,14 @@ export function useFirebase(options: UseFirebaseOptions = {}) {
 
     try {
       unsubscribeNodes = subscribeToNodes(setNodes);
-      unsubscribeAlerts = subscribeToAlerts(setAlerts);
+      unsubscribeAlerts = subscribeToAlerts((firebaseAlerts) => {
+        // Add frontend timestamps to alerts that come from Firebase
+        const alertsWithLocalTimestamps = firebaseAlerts.map(alert => ({
+          ...alert,
+          timestamp: alert.timestamp || new Date()
+        }));
+        setAlerts(alertsWithLocalTimestamps);
+      });
       unsubscribeConnections = subscribeToConnections(setConnections);
       unsubscribeNetworkStatus = subscribeToNetworkStatus(setNetworkStatus);
       
@@ -130,11 +136,67 @@ export function useFirebase(options: UseFirebaseOptions = {}) {
   // New function to handle updating node alerts
   const handleUpdateNodeAlert = async (nodeId: string, alertType: AlertType, isActive: boolean) => {
     try {
+      // Generate a timestamp on the frontend
+      const now = new Date();
+      
+      // Send alert type status to Firebase, but keep timestamp on frontend
       await updateNodeAlert(nodeId, alertType, isActive);
+      
+      // If alert is active, add it to our local alerts state with frontend timestamp
+      if (isActive) {
+        const alertSeverity = getAlertSeverity(alertType);
+        const alertDescription = getAlertDescription(alertType);
+        
+        const newAlert: Alert = {
+          id: `${nodeId}-${alertType}-${Date.now()}`,
+          type: alertType,
+          nodeId: nodeId,
+          timestamp: now,
+          description: alertDescription,
+          severity: alertSeverity,
+          acknowledged: false
+        };
+        
+        // Add to local alerts state
+        setAlerts(prevAlerts => [...prevAlerts, newAlert]);
+      }
+      
       return true;
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to update node alert'));
       return false;
+    }
+  };
+  
+  // Helper function to get alert severity based on type
+  const getAlertSeverity = (alertType: string): "critical" | "warning" | "info" => {
+    switch (alertType) {
+      case "gun_sound":
+      case "suspicious_activity":
+        return "critical";
+      case "footsteps":
+      case "whisper":
+        return "warning";
+      default:
+        return "info";
+    }
+  };
+
+  // Helper function to get alert description based on type
+  const getAlertDescription = (alertType: string): string => {
+    switch (alertType) {
+      case "gun_sound":
+        return "Gunshots Detected";
+      case "footsteps":
+        return "Footsteps Detected";
+      case "whisper":
+        return "Whispers Detected";
+      case "motion":
+        return "Motion Detected";
+      case "suspicious_activity":
+        return "Suspicious Activity";
+      default:
+        return alertType.replace(/_/g, " ");
     }
   };
 

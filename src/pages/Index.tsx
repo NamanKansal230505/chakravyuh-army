@@ -6,12 +6,10 @@ import AlertsList from "@/components/AlertsList";
 import ActivityLog from "@/components/ActivityLog";
 import DeploymentMap from "@/components/DeploymentMap";
 import NodeDetails from "@/components/NodeDetails";
-import { generateMockAlert } from "@/lib/mockData";
 import { toast } from "@/components/ui/use-toast";
-import { Alert, Node, AlertType } from "@/lib/types";
+import { Alert, Node } from "@/lib/types";
 import { useFirebase } from "@/hooks/useFirebase";
 import { useNavigate, useLocation } from "react-router-dom";
-import { updateNodeAlert } from "@/lib/firebase";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -31,8 +29,7 @@ const Index = () => {
     selectedNode: firebaseSelectedNode,
     loading,
     error,
-    handleAddNode,
-    handleUpdateNodeAlert
+    handleAddNode
   } = useFirebase({
     seedDataIfEmpty: true,
     nodeId: nodeId || undefined
@@ -53,48 +50,6 @@ const Index = () => {
       }
     }
   }, [nodeId, firebaseSelectedNode, nodes]);
-
-  // We'll keep the mock alert generation for demonstration purposes
-  // In a real implementation, alerts would come directly from backend/firebase
-  useEffect(() => {
-    // Generate new alert simulation every 45-90 seconds
-    const alertInterval = setInterval(() => {
-      if (Math.random() > 0.5 && nodes.length > 0) {
-        // Select random node and alert type
-        const randomNode = nodes[Math.floor(Math.random() * nodes.length)];
-        const alertTypes: AlertType[] = ["gun_sound", "footsteps", "motion", "whisper", "suspicious_activity"];
-        const randomType = alertTypes[Math.floor(Math.random() * alertTypes.length)];
-        
-        // Update the node's alert status in Firebase
-        handleUpdateNodeAlert(randomNode.id, randomType, true);
-        
-        // Determine severity for toast notifications
-        let severity: "critical" | "warning" | "info" = "info";
-        if (randomType === "gun_sound" || randomType === "suspicious_activity") {
-          severity = "critical";
-        } else if (randomType === "footsteps" || randomType === "whisper") {
-          severity = "warning";
-        }
-        
-        // Show toast notification for critical alerts
-        if (severity === "critical") {
-          toast({
-            title: "Critical Alert",
-            description: `${randomType.replace("_", " ")} - Node ${randomNode.id.replace("node", "")}`,
-            variant: "destructive",
-          });
-        } else if (severity === "warning") {
-          toast({
-            title: "Warning Alert",
-            description: `${randomType.replace("_", " ")} - Node ${randomNode.id.replace("node", "")}`,
-            variant: "default",
-          });
-        }
-      }
-    }, 45000 + Math.random() * 45000);
-
-    return () => clearInterval(alertInterval);
-  }, [nodes, handleUpdateNodeAlert]);
 
   // Handle node selection
   const handleSelectNode = (node: Node) => {
@@ -179,7 +134,7 @@ const Index = () => {
         
         result.push({
           id: `${node.id}-${type}-${Date.now()}`,
-          type: type as AlertType,
+          type: type as any,
           nodeId: node.id,
           timestamp: new Date(),
           description,
@@ -192,8 +147,8 @@ const Index = () => {
     return result;
   }, []);
   
-  // Combine historical alerts with active alerts
-  const combinedAlerts = [...activeAlerts, ...alerts];
+  // Only show active alerts from nodes, not historical alerts
+  const combinedAlerts = activeAlerts;
 
   return (
     <div className="min-h-screen bg-background text-foreground">

@@ -69,6 +69,16 @@ export default {
 					info: '#0FA0CE',
 					success: '#10B981',
 				},
+				army: {
+					olive: '#4B5320',
+					khaki: '#8B7D39',
+					green: '#2D4F25',
+					red: '#C0392B',
+					tan: '#D2B48C',
+					brown: '#654321',
+					gray: '#8E9196',
+					blue: '#3B5998',
+				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

@@ -5,43 +5,43 @@
 
 @layer base {
   :root {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    --background: 83 20% 17%; /* army olive background */
+    --foreground: 60 10% 98%;
 
-    --card: 222 47% 14%;
-    --card-foreground: 210 40% 98%;
+    --card: 83 20% 20%;
+    --card-foreground: 60 10% 98%;
 
-    --popover: 222 47% 14%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 83 20% 20%;
+    --popover-foreground: 60 10% 98%;
 
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 0 70% 46%; /* army red */
+    --primary-foreground: 60 10% 98%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 90 14% 20%; /* army green */
+    --secondary-foreground: 60 10% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 84 15% 25%;
+    --muted-foreground: 215 20.2% 85.1%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 42 38% 53%; /* army khaki */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 84 15% 25%;
+    --input: 84 15% 25%;
     --ring: 212.7 26.8% 83.9%;
     
     /* Sidebar is not used but kept for compatibility */
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 84 15% 15%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 0 70% 46%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 84 15% 20%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 84 15% 25%;
+    --sidebar-ring: 0 70% 46%;
 
     --radius: 0.5rem;
   }
@@ -76,5 +76,17 @@
   
   .status-badge-success {
     @apply bg-alert-success/20 text-alert-success;
+  }
+
+  .army-card {
+    @apply bg-card border-2 border-army-khaki/30 shadow-md;
+  }
+  
+  .army-button {
+    @apply bg-army-red hover:bg-army-red/90 text-white font-medium;
+  }
+
+  .army-input {
+    @apply bg-muted/50 border-army-khaki/30 focus:border-army-khaki;
   }
 }

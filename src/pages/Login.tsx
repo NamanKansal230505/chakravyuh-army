@@ -23,7 +23,7 @@ const Login = () => {
       if (username === "admin" && password === "admin") {
         toast({
           title: "Login successful",
-          description: "Welcome to Shadow Alert Network",
+          description: "Welcome to Chakravyuh",
           duration: 3000,
         });
         navigate("/regions");
@@ -48,7 +48,7 @@ const Login = () => {
           <div className="flex justify-center mb-2">
             <Shield className="h-12 w-12 text-army-red" />
           </div>
-          <CardTitle className="text-2xl font-bold">Shadow Alert Network</CardTitle>
+          <CardTitle className="text-2xl font-bold">Chakravyuh</CardTitle>
           <CardDescription>Indian Army Perimeter Defense System</CardDescription>
         </CardHeader>
         <CardContent>

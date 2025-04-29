@@ -56,7 +56,7 @@ const Regions = () => {
         <div className="container flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Flag className="h-6 w-6 text-army-red" />
-            <h1 className="text-xl font-bold">Shadow Alert Network</h1>
+            <h1 className="text-xl font-bold">Chakravyuh</h1>
           </div>
           <Button variant="outline" onClick={handleLogout}>
             Logout

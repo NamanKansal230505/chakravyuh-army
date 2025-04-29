@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import NetworkStatus from "@/components/NetworkStatus";
 import { AddNodeButton, AddNodeModal } from "@/components/AddNodeModal";
@@ -115,7 +116,7 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="text-xl font-bold">Loading Shadow Alert Network</div>
+          <div className="text-xl font-bold">Loading Chakravyuh</div>
           <div className="flex justify-center">
             <div className="w-8 h-8 border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
           </div>
@@ -199,7 +200,7 @@ const Index = () => {
       <div className="container py-6 space-y-6">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Shadow Alert Network</h1>
+            <h1 className="text-2xl font-bold">Chakravyuh</h1>
             <p className="text-muted-foreground">Army Perimeter Defense System</p>
           </div>
           {selectedNode && (

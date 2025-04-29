@@ -4,12 +4,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Flag, ChevronRight } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 interface Region {
   id: string;
   name: string;
   description: string;
   locations: string[];
+  isActive: boolean;
 }
 
 const Regions = () => {
@@ -20,30 +22,43 @@ const Regions = () => {
       id: "jk",
       name: "Jammu & Kashmir",
       description: "Border surveillance network in the northern region",
-      locations: ["Pahalgam", "Doda", "Patnitop", "Gulmarg", "Sonamarg"]
+      locations: ["Pahalgam", "Doda", "Patnitop", "Gulmarg", "Sonamarg"],
+      isActive: true
     },
     {
       id: "punjab",
       name: "Punjab",
       description: "Western border surveillance network",
-      locations: ["Amritsar", "Pathankot", "Firozpur", "Gurdaspur", "Fazilka"]
+      locations: ["Amritsar", "Pathankot", "Firozpur", "Gurdaspur", "Fazilka"],
+      isActive: false
     },
     {
       id: "rajasthan",
       name: "Rajasthan",
       description: "Desert surveillance network",
-      locations: ["Jaisalmer", "Bikaner", "Barmer", "Sri Ganganagar", "Jodhpur"]
+      locations: ["Jaisalmer", "Bikaner", "Barmer", "Sri Ganganagar", "Jodhpur"],
+      isActive: false
     },
     {
       id: "ne",
       name: "North East",
       description: "Eastern surveillance network",
-      locations: ["Tawang", "Walong", "Kibithu", "Nathu La", "Bumla"]
+      locations: ["Tawang", "Walong", "Kibithu", "Nathu La", "Bumla"],
+      isActive: false
     }
   ]);
   
-  const handleRegionSelect = (regionId: string) => {
-    navigate(`/dashboard`);
+  const handleRegionSelect = (regionId: string, isActive: boolean) => {
+    if (isActive) {
+      navigate(`/dashboard`);
+    } else {
+      toast({
+        title: "Region unavailable",
+        description: "This region is not available in the current version",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
   
   const handleLogout = () => {
@@ -69,12 +84,25 @@ const Regions = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {regions.map((region) => (
-            <Card key={region.id} className="army-card overflow-hidden hover:border-army-khaki/70 transition-colors cursor-pointer" onClick={() => handleRegionSelect(region.id)}>
+            <Card 
+              key={region.id} 
+              className={`army-card overflow-hidden transition-colors cursor-pointer ${
+                region.isActive ? "hover:border-army-khaki/70" : "opacity-60"
+              }`} 
+              onClick={() => handleRegionSelect(region.id, region.isActive)}
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle>{region.name}</CardTitle>
-                    <CardDescription>{region.description}</CardDescription>
+                    <CardDescription>
+                      {region.description}
+                      {!region.isActive && (
+                        <span className="block text-army-red mt-1">
+                          Coming soon
+                        </span>
+                      )}
+                    </CardDescription>
                   </div>
                   <MapPin className="h-5 w-5 text-army-red" />
                 </div>
@@ -90,8 +118,10 @@ const Regions = () => {
                 </div>
               </CardContent>
               <CardFooter className="bg-muted/30 flex justify-between items-center">
-                <span className="text-sm">View network</span>
-                <ChevronRight className="h-4 w-4" />
+                <span className="text-sm">
+                  {region.isActive ? "View network" : "Not available"}
+                </span>
+                {region.isActive && <ChevronRight className="h-4 w-4" />}
               </CardFooter>
             </Card>
           ))}

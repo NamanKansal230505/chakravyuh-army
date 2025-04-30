@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import NetworkStatus from "@/components/NetworkStatus";
 import { AddNodeButton, AddNodeModal } from "@/components/AddNodeModal";
 import AlertsList from "@/components/AlertsList";
@@ -7,7 +8,7 @@ import DeploymentMap from "@/components/DeploymentMap";
 import NodeDetails from "@/components/NodeDetails";
 import AlertSound from "@/components/AlertSound";
 import { toast } from "@/components/ui/use-toast";
-import { Alert, Node } from "@/lib/types";
+import { Node } from "@/lib/types";
 import { useFirebase } from "@/hooks/useFirebase";
 import { useLocation } from "react-router-dom";
 

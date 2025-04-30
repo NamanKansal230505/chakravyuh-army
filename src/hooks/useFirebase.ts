@@ -117,17 +117,32 @@ export function useFirebase(options: UseFirebaseOptions = {}) {
       return result;
     }, []);
     
-    // Merge new alerts with existing alerts but don't remove alerts when they're turned off in Firebase
+    // Merge new alerts with existing alerts without removing older alerts
     if (activeAlertsList.length > 0) {
       setAlerts(prev => {
-        // Combine previous alerts with new active alerts
-        const combined = [...prev, ...activeAlertsList];
+        // Create a map of existing alerts by their unique type+nodeId combination
+        const existingAlertMap = new Map<string, Alert>();
+        prev.forEach(alert => {
+          existingAlertMap.set(`${alert.nodeId}-${alert.type}`, alert);
+        });
         
-        // Sort by timestamp, newest first
-        return combined
+        // Add new alerts, replacing any existing alerts of the same type and nodeId with newer ones
+        activeAlertsList.forEach(newAlert => {
+          const key = `${newAlert.nodeId}-${newAlert.type}`;
+          const existing = existingAlertMap.get(key);
+          
+          if (!existing || newAlert.timestamp > existing.timestamp) {
+            existingAlertMap.set(key, newAlert);
+          }
+        });
+        
+        // Convert back to an array and sort
+        const combined = Array.from(existingAlertMap.values())
           .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
           // Limit to last 100 alerts to prevent memory issues
           .slice(0, 100); 
+          
+        return combined;
       });
     }
   }, [alertSeverity]);
@@ -203,21 +218,9 @@ export function useFirebase(options: UseFirebaseOptions = {}) {
     try {
       await addNewNode(newNode);
       
-      // Add connections to nearby nodes (2 closest nodes)
+      // Add connections to nearby nodes (all other nodes since we have only 2)
       const nearbyNodes = [...nodes]
-        .filter(n => n.id !== newNode.id)
-        .sort((a, b) => {
-          const distA = Math.sqrt(
-            Math.pow(a.location.lat - newNode.location.lat, 2) + 
-            Math.pow(a.location.lng - newNode.location.lng, 2)
-          );
-          const distB = Math.sqrt(
-            Math.pow(b.location.lat - newNode.location.lat, 2) + 
-            Math.pow(b.location.lng - newNode.location.lng, 2)
-          );
-          return distA - distB;
-        })
-        .slice(0, 2);
+        .filter(n => n.id !== newNode.id);
       
       const newConnections = nearbyNodes.map(node => ({
         source: newNode.id,

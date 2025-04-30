@@ -16,6 +16,7 @@ const AlertSound: React.FC<AlertSoundProps> = ({
 
   useEffect(() => {
     if (playSound && audioRef.current) {
+      // Set the source based on severity
       const soundFile = severity === 'critical' 
         ? '/alert-critical.mp3' 
         : severity === 'warning'
@@ -23,10 +24,13 @@ const AlertSound: React.FC<AlertSoundProps> = ({
         : '/alert-info.mp3';
         
       audioRef.current.src = soundFile;
+      
+      // Play the sound
       audioRef.current.play().catch(error => {
         console.error("Error playing sound:", error);
       });
       
+      // Notify parent that sound has been played
       if (onSoundPlayed) {
         onSoundPlayed();
       }

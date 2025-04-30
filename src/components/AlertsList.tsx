@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert } from "@/lib/types";
-import { AlertTriangle, Volume2, MapPin, HelpCircle } from "lucide-react";
+import { AlertTriangle, Volume2, MapPin, HelpCircle, Drone } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface AlertsListProps {
@@ -10,8 +10,22 @@ interface AlertsListProps {
 
 const AlertsList: React.FC<AlertsListProps> = ({ alerts }) => {
   // Get the 5 most recent unacknowledged alerts
-  const recentAlerts = [...alerts]
-    .filter((alert) => !alert.acknowledged)
+  // Use a Set to track unique alert types per node to avoid duplicates
+  const uniqueAlerts = new Map<string, Alert>();
+  
+  // Process alerts to keep only the most recent of each type per node
+  alerts.forEach(alert => {
+    if (!alert.acknowledged) {
+      const key = `${alert.nodeId}-${alert.type}`;
+      if (!uniqueAlerts.has(key) || 
+          uniqueAlerts.get(key)!.timestamp < alert.timestamp) {
+        uniqueAlerts.set(key, alert);
+      }
+    }
+  });
+  
+  // Convert back to array and sort
+  const recentAlerts = Array.from(uniqueAlerts.values())
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
     .slice(0, 5);
 
@@ -28,8 +42,7 @@ const AlertsList: React.FC<AlertsListProps> = ({ alerts }) => {
       case "suspicious_activity":
         return <AlertTriangle className="h-4 w-4 text-alert-critical" />;
       case "drone":
-        // Use AlertTriangle for drone detection since Drone icon is not available
-        return <AlertTriangle className="h-4 w-4 text-alert-warning" />;
+        return <Drone className="h-4 w-4 text-alert-warning" />;
       case "help":
         return <HelpCircle className="h-4 w-4 text-alert-critical" />;
       default:

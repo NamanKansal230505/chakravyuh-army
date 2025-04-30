@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Node, NetworkConnection } from "@/lib/types";
@@ -19,7 +18,6 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 400 });
-  const [mapImage] = useState("/lovable-uploads/364fcfbe-bc96-49e9-9a38-693b92478f75.png");
 
   // Map boundaries (these would ideally be calculated from your real data)
   const mapBounds = {
@@ -50,15 +48,11 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    const image = new Image();
-    image.src = mapImage;
     
     // Create a rendering function to avoid flickering
     const renderCanvas = () => {
-      // Draw background image with opacity to darken it slightly
-      ctx.drawImage(image, 0, 0, width, height);
-      ctx.fillStyle = 'rgba(33, 36, 27, 0.4)'; // Apply a dark green tint
+      // Clear canvas with a dark background
+      ctx.fillStyle = 'rgba(33, 36, 27, 0.9)';
       ctx.fillRect(0, 0, width, height);
       
       // Draw a subtle network grid pattern
@@ -194,7 +188,7 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
     };
     
     // Initial render
-    image.onload = renderCanvas;
+    renderCanvas();
     
     // Set up animation frame to smoothly render
     let animationFrameId: number;
@@ -209,7 +203,7 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [nodes, connections, dimensions, mapImage, selectedNodeId, mapBounds]);
+  }, [nodes, connections, dimensions, selectedNodeId, mapBounds]);
 
   // Handle window resize
   useEffect(() => {

@@ -93,7 +93,8 @@ export function useFirebase(options: UseFirebaseOptions = {}) {
               break;
           }
           
-          result.push({
+          // Create a new alert object
+          const newAlert = {
             id: `${node.id}-${type}-${Date.now()}`,
             type: type as AlertType,
             nodeId: node.id,
@@ -101,7 +102,9 @@ export function useFirebase(options: UseFirebaseOptions = {}) {
             description,
             severity,
             acknowledged: false
-          });
+          };
+
+          result.push(newAlert);
 
           // Auto-reset the alert status in Firebase after a few seconds
           setTimeout(() => {
@@ -114,18 +117,19 @@ export function useFirebase(options: UseFirebaseOptions = {}) {
       return result;
     }, []);
     
-    // Merge new alerts with existing alerts
-    // New alerts will be added to the top as they have newer timestamps
-    setAlerts(prev => {
-      // Combine previous alerts with new active alerts
-      const combined = [...prev, ...activeAlertsList];
-      
-      // Sort by timestamp, newest first
-      return combined
-        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-        // Limit to last 100 alerts to prevent memory issues
-        .slice(0, 100); 
-    });
+    // Merge new alerts with existing alerts but don't remove alerts when they're turned off in Firebase
+    if (activeAlertsList.length > 0) {
+      setAlerts(prev => {
+        // Combine previous alerts with new active alerts
+        const combined = [...prev, ...activeAlertsList];
+        
+        // Sort by timestamp, newest first
+        return combined
+          .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+          // Limit to last 100 alerts to prevent memory issues
+          .slice(0, 100); 
+      });
+    }
   }, [alertSeverity]);
 
   // Subscribe to data changes

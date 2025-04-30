@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import NetworkStatus from "@/components/NetworkStatus";
 import { AddNodeButton, AddNodeModal } from "@/components/AddNodeModal";
@@ -10,24 +9,19 @@ import AlertSound from "@/components/AlertSound";
 import { toast } from "@/components/ui/use-toast";
 import { Alert, Node } from "@/lib/types";
 import { useFirebase } from "@/hooks/useFirebase";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 const Index = () => {
-  const navigate = useNavigate();
   const location = useLocation();
   const [isAddNodeModalOpen, setIsAddNodeModalOpen] = useState(false);
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   
-  // Extract node ID from URL if present
-  const nodeIdMatch = location.pathname.match(/^\/node(\d+)$/);
-  const nodeId = nodeIdMatch ? `node${nodeIdMatch[1]}` : null;
-
   // Use our Firebase hook
   const {
     nodes,
     alerts,
     connections,
     networkStatus,
-    selectedNode: firebaseSelectedNode,
     loading,
     error,
     handleAddNode,
@@ -35,32 +29,12 @@ const Index = () => {
     alertSeverity,
     handleSoundPlayed
   } = useFirebase({
-    seedDataIfEmpty: true,
-    nodeId: nodeId || undefined
+    seedDataIfEmpty: true
   });
-
-  // Local selected node state
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-
-  // Update selected node when Firebase node changes or when URL changes
-  useEffect(() => {
-    if (nodeId && firebaseSelectedNode) {
-      setSelectedNode(firebaseSelectedNode);
-    } else if (nodeId && nodes.length > 0) {
-      // Try to find the node in our nodes array
-      const foundNode = nodes.find(node => node.id === nodeId);
-      if (foundNode) {
-        setSelectedNode(foundNode);
-      }
-    }
-  }, [nodeId, firebaseSelectedNode, nodes]);
 
   // Handle node selection
   const handleSelectNode = (node: Node) => {
     setSelectedNode(node);
-    
-    // Update URL to reflect selected node
-    navigate(`/node${node.id.replace("node", "")}`);
     
     // Display node selection toast
     toast({
@@ -144,17 +118,6 @@ const Index = () => {
             <h1 className="text-2xl font-bold text-army-red">Chakravyuh</h1>
             <p className="text-muted-foreground">Army Perimeter Defense System</p>
           </div>
-          {selectedNode && (
-            <button
-              onClick={() => {
-                navigate("/dashboard");
-                setSelectedNode(null);
-              }}
-              className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md"
-            >
-              Back to Overview
-            </button>
-          )}
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -21,7 +21,7 @@ const App = () => (
           <Route path="/" element={<Login />} />
           <Route path="/regions" element={<Regions />} />
           <Route path="/dashboard" element={<Index />} />
-          <Route path="/node:id" element={<Index />} />
+          {/* Removed the /node:id route as we'll display node details in the dashboard */}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

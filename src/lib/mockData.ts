@@ -139,20 +139,24 @@ export const mockNodes: Node[] = [
 
 // Alert descriptions by type
 const alertDescriptions: Record<AlertType, string[]> = {
-  gun_sound: ["Gun Reload Detected", "Gunshot Detected", "Multiple Gunshots Detected"],
+  gun: ["Gun Reload Detected", "Gunshot Detected", "Multiple Gunshots Detected"],
   footsteps: ["Footsteps Detected", "Multiple Footsteps", "Heavy Footsteps Detected"],
   motion: ["Movement Detected", "Fast Movement Detected", "Motion Alert"],
   whisper: ["Whispers Detected", "Quiet Speech Detected", "Low Voice Conversation"],
-  suspicious_activity: ["Suspicious Activity", "Unusual Pattern Detected", "Unidentified Activity"]
+  suspicious_activity: ["Suspicious Activity", "Unusual Pattern Detected", "Unidentified Activity"],
+  drone: ["Drone Detected", "UAV Activity", "Aerial Vehicle Detected"],
+  help: ["Help Call Detected", "Distress Signal", "Emergency Request"]
 };
 
 // Alert severities by type
 const alertSeverities: Record<AlertType, "critical" | "warning" | "info"> = {
-  gun_sound: "critical",
+  gun: "critical",
   footsteps: "warning",
   motion: "info",
   whisper: "warning",
-  suspicious_activity: "critical"
+  suspicious_activity: "critical",
+  drone: "warning",
+  help: "critical"
 };
 
 // Generate mock alerts
@@ -160,7 +164,7 @@ export const mockAlerts: Alert[] = [
   // Recent alerts
   {
     id: "alert1",
-    type: "gun_sound",
+    type: "gun",
     nodeId: "node5",
     timestamp: new Date(2023, 3, 24, 19, 33, 14),
     description: "Gun Reload Detected",

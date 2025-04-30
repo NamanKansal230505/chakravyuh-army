@@ -6,6 +6,7 @@ import AlertsList from "@/components/AlertsList";
 import ActivityLog from "@/components/ActivityLog";
 import DeploymentMap from "@/components/DeploymentMap";
 import NodeDetails from "@/components/NodeDetails";
+import AlertSound from "@/components/AlertSound";
 import { toast } from "@/components/ui/use-toast";
 import { Alert, Node } from "@/lib/types";
 import { useFirebase } from "@/hooks/useFirebase";
@@ -29,7 +30,10 @@ const Index = () => {
     selectedNode: firebaseSelectedNode,
     loading,
     error,
-    handleAddNode
+    handleAddNode,
+    shouldPlayAlertSound,
+    alertSeverity,
+    handleSoundPlayed
   } = useFirebase({
     seedDataIfEmpty: true,
     nodeId: nodeId || undefined
@@ -69,8 +73,16 @@ const Index = () => {
   // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-        <div className="text-center space-y-4">
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
+          <img 
+            src="/lovable-uploads/364fcfbe-bc96-49e9-9a38-693b92478f75.png" 
+            alt="Background" 
+            className="w-full h-full object-cover opacity-20"
+          />
+          <div className="absolute inset-0 bg-background/70" />
+        </div>
+        <div className="text-center space-y-4 z-10">
           <div className="text-xl font-bold">Loading Chakravyuh</div>
           <div className="flex justify-center">
             <div className="w-8 h-8 border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
@@ -83,8 +95,16 @@ const Index = () => {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-        <div className="text-center space-y-4 max-w-md p-6 bg-red-500/10 rounded-lg">
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
+          <img 
+            src="/lovable-uploads/364fcfbe-bc96-49e9-9a38-693b92478f75.png" 
+            alt="Background" 
+            className="w-full h-full object-cover opacity-20"
+          />
+          <div className="absolute inset-0 bg-background/70" />
+        </div>
+        <div className="text-center space-y-4 max-w-md p-6 bg-red-500/10 rounded-lg z-10">
           <div className="text-xl font-bold text-red-500">Error Loading Data</div>
           <div className="text-muted-foreground">{error.message}</div>
           <button
@@ -98,70 +118,36 @@ const Index = () => {
     );
   }
 
-  // Create a derived list of active alerts from nodes with active alerts
-  const activeAlerts = nodes.reduce((result: Alert[], node) => {
-    if (!node.alerts) return result;
-    
-    Object.entries(node.alerts).forEach(([type, isActive]) => {
-      if (isActive) {
-        // Determine severity based on alert type
-        let severity: "critical" | "warning" | "info" = "info";
-        if (type === "gun_sound" || type === "suspicious_activity") {
-          severity = "critical";
-        } else if (type === "footsteps" || type === "whisper") {
-          severity = "warning";
-        }
-        
-        // Format description based on alert type
-        let description = type.replace(/_/g, " ");
-        switch (type) {
-          case "gun_sound": 
-            description = "Gunshots Detected"; 
-            break;
-          case "footsteps": 
-            description = "Footsteps Detected"; 
-            break;
-          case "whisper": 
-            description = "Whispers Detected"; 
-            break;
-          case "motion": 
-            description = "Motion Detected"; 
-            break;
-          case "suspicious_activity": 
-            description = "Suspicious Activity"; 
-            break;
-        }
-        
-        result.push({
-          id: `${node.id}-${type}-${Date.now()}`,
-          type: type as any,
-          nodeId: node.id,
-          timestamp: new Date(),
-          description,
-          severity,
-          acknowledged: false
-        });
-      }
-    });
-    
-    return result;
-  }, []);
-  
-  // Only show active alerts from nodes, not historical alerts
-  const combinedAlerts = activeAlerts;
-
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="container py-6 space-y-6">
+    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+      {/* Background image with overlay */}
+      <div className="absolute inset-0 overflow-hidden">
+        <img 
+          src="/lovable-uploads/364fcfbe-bc96-49e9-9a38-693b92478f75.png" 
+          alt="Background" 
+          className="w-full h-full object-cover opacity-20"
+        />
+        <div className="absolute inset-0 bg-background/70" />
+      </div>
+      
+      {/* Alert sound component */}
+      <AlertSound 
+        playSound={shouldPlayAlertSound} 
+        severity={alertSeverity} 
+        onSoundPlayed={handleSoundPlayed}
+      />
+      
+      {/* Main content */}
+      <div className="container py-6 space-y-6 relative z-10">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Chakravyuh</h1>
+            <h1 className="text-2xl font-bold text-army-red">Chakravyuh</h1>
             <p className="text-muted-foreground">Army Perimeter Defense System</p>
           </div>
           {selectedNode && (
             <button
               onClick={() => {
-                navigate("/");
+                navigate("/dashboard");
                 setSelectedNode(null);
               }}
               className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md"
@@ -174,7 +160,7 @@ const Index = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <NetworkStatus status={networkStatus} />
           <AddNodeButton onClick={() => setIsAddNodeModalOpen(true)} />
-          <AlertsList alerts={combinedAlerts} />
+          <AlertsList alerts={alerts} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -192,7 +178,7 @@ const Index = () => {
         </div>
 
         <div>
-          <ActivityLog alerts={combinedAlerts} />
+          <ActivityLog alerts={alerts} />
         </div>
       </div>
 

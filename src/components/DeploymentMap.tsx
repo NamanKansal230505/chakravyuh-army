@@ -19,7 +19,7 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 400 });
-  const [backgroundImage] = useState("/lovable-uploads/6e0aff5c-acb9-4b64-bce6-2ff626040349.png");
+  const [mapImage] = useState("/lovable-uploads/364fcfbe-bc96-49e9-9a38-693b92478f75.png");
 
   // Map boundaries (these would ideally be calculated from your real data)
   const mapBounds = {
@@ -52,11 +52,34 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
     if (!ctx) return;
 
     const image = new Image();
-    image.src = backgroundImage;
+    image.src = mapImage;
     
-    image.onload = () => {
-      // Draw background image
+    // Create a rendering function to avoid flickering
+    const renderCanvas = () => {
+      // Draw background image with opacity to darken it slightly
       ctx.drawImage(image, 0, 0, width, height);
+      ctx.fillStyle = 'rgba(33, 36, 27, 0.4)'; // Apply a dark green tint
+      ctx.fillRect(0, 0, width, height);
+      
+      // Draw a subtle network grid pattern
+      ctx.strokeStyle = 'rgba(235, 241, 222, 0.15)';
+      ctx.lineWidth = 0.5;
+      
+      // Draw grid lines
+      const gridSize = 30;
+      for (let x = 0; x < width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      
+      for (let y = 0; y < height; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
       
       // Draw network connections
       connections.forEach(connection => {
@@ -77,11 +100,24 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
             height
           );
           
-          // Draw line with connection strength alpha
+          // Draw connection line with glow effect
           ctx.beginPath();
           ctx.moveTo(sourcePos.x, sourcePos.y);
           ctx.lineTo(targetPos.x, targetPos.y);
-          ctx.strokeStyle = `rgba(16, 185, 129, ${connection.strength / 100})`;
+          
+          // Connection strength affects opacity
+          const connectionAlpha = connection.strength / 100;
+          
+          // Draw outer glow
+          ctx.strokeStyle = `rgba(16, 185, 129, ${connectionAlpha * 0.4})`;
+          ctx.lineWidth = 6;
+          ctx.stroke();
+          
+          // Draw inner line
+          ctx.beginPath();
+          ctx.moveTo(sourcePos.x, sourcePos.y);
+          ctx.lineTo(targetPos.x, targetPos.y);
+          ctx.strokeStyle = `rgba(16, 185, 129, ${connectionAlpha})`;
           ctx.lineWidth = 2;
           ctx.stroke();
         }
@@ -111,27 +147,84 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
         const nodeSize = node.type === "gateway" ? 10 : 
                           node.type === "advanced" ? 8 : 6;
         
-        // Draw node outline
+        // Draw node highlight/selection effect
         if (node.id === selectedNodeId) {
+          // Outer glow for selected node
+          ctx.beginPath();
+          ctx.arc(x, y, nodeSize + 8, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+          ctx.fill();
+          
+          // Inner glow
           ctx.beginPath();
           ctx.arc(x, y, nodeSize + 4, 0, Math.PI * 2);
           ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
           ctx.fill();
         }
         
-        // Draw node
+        // Draw node with subtle shadow
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 5;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+        
+        // Main node circle
         ctx.beginPath();
         ctx.arc(x, y, nodeSize, 0, Math.PI * 2);
         ctx.fillStyle = nodeColor;
         ctx.fill();
         
+        // Remove shadow for border
+        ctx.shadowColor = 'transparent';
+        
         // Node border
         ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
         ctx.lineWidth = 2;
         ctx.stroke();
+        
+        // Add a small label for node ID
+        if (node.id === selectedNodeId || node.type === "gateway") {
+          ctx.font = "10px Arial";
+          ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+          ctx.textAlign = "center";
+          const nodeNumber = node.id.replace("node", "");
+          ctx.fillText(nodeNumber, x, y + nodeSize + 12);
+        }
       });
     };
-  }, [nodes, connections, dimensions, backgroundImage, selectedNodeId]);
+    
+    // Initial render
+    image.onload = renderCanvas;
+    
+    // Set up animation frame to smoothly render
+    let animationFrameId: number;
+    const animate = () => {
+      renderCanvas();
+      animationFrameId = requestAnimationFrame(animate);
+    };
+    
+    animate();
+    
+    // Clean up
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [nodes, connections, dimensions, mapImage, selectedNodeId, mapBounds]);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        setDimensions({ width, height });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // Handle node selection
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -160,7 +253,7 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
   };
 
   return (
-    <Card className="h-full">
+    <Card className="h-full border-army-khaki/30 bg-card/90">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium">Deployment Map</CardTitle>
       </CardHeader>

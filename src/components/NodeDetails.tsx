@@ -13,7 +13,7 @@ interface NodeDetailsProps {
 const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
   if (!node) {
     return (
-      <Card className="bg-card/50 h-full">
+      <Card className="bg-card/50 h-full border-army-khaki/30">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium">Node Details</CardTitle>
         </CardHeader>
@@ -52,12 +52,26 @@ const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
   // Check if any alerts are active
   const hasActiveAlerts = node.alerts && Object.values(node.alerts).some(alert => alert);
 
+  // Format alert name
+  const formatAlertName = (alertKey: string) => {
+    switch (alertKey) {
+      case "gun": return "Gunshots";
+      case "footsteps": return "Footsteps";
+      case "motion": return "Motion";
+      case "whisper": return "Whispers";
+      case "suspicious_activity": return "Suspicious Activity";
+      case "drone": return "Drone";
+      case "help": return "Help Call";
+      default: return alertKey.replace('_', ' ');
+    }
+  };
+
   return (
-    <Card className="h-full">
+    <Card className="h-full border-army-khaki/30 bg-card/90">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium">
-            Selected Node: #{node.id.replace("node", "")}
+            {node.name || `Node #${node.id.replace("node", "")}`}
           </CardTitle>
           <span className={statusBadge}>{node.status}</span>
         </div>
@@ -96,7 +110,7 @@ const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
                 isActive && (
                   <li key={alertType} className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-alert-critical"></span>
-                    {alertType.replace('_', ' ')}
+                    {formatAlertName(alertType)}
                   </li>
                 )
               ))}

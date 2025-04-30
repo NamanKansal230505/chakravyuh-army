@@ -13,20 +13,24 @@ export interface Node {
   };
   type: "standard" | "advanced" | "gateway";
   alerts?: {
-    gun_sound: boolean;
+    gun: boolean;
     footsteps: boolean;
     motion: boolean;
     whisper: boolean;
     suspicious_activity: boolean;
+    drone: boolean;
+    help: boolean;
   };
 }
 
 export type AlertType = 
-  | "gun_sound" 
+  | "gun" 
   | "footsteps" 
   | "motion" 
   | "whisper" 
-  | "suspicious_activity";
+  | "suspicious_activity"
+  | "drone"
+  | "help";
 
 export interface Alert {
   id: string;

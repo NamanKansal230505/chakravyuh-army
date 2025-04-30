@@ -48,11 +48,13 @@ export const subscribeToNodes = (callback: (nodes: Node[]) => void) => {
         location: nodeData.location || { lat: 21.15, lng: 79.08 },
         type: nodeData.type || 'standard',
         alerts: nodeData.alerts || {
-          gun_sound: false,
+          gun: false,
           footsteps: false,
           motion: false,
           whisper: false,
-          suspicious_activity: false
+          suspicious_activity: false,
+          drone: false,
+          help: false
         }
       };
       
@@ -110,11 +112,13 @@ export const subscribeToSpecificNode = (nodeId: string, callback: (node: Node | 
         location: data.location || { lat: 21.15, lng: 79.08 },
         type: data.type || 'standard',
         alerts: data.alerts || {
-          gun_sound: false,
+          gun: false,
           footsteps: false,
           motion: false,
           whisper: false,
-          suspicious_activity: false
+          suspicious_activity: false,
+          drone: false,
+          help: false
         }
       };
       
@@ -127,7 +131,28 @@ export const subscribeToSpecificNode = (nodeId: string, callback: (node: Node | 
   return unsubscribe;
 };
 
+let nextNodeId = 1;
+
 export const addNewNode = async (node: Node) => {
+  // If node id is not provided, generate one
+  if (!node.id) {
+    // Get the highest number suffix from existing nodes to ensure uniqueness
+    const snapshot = await new Promise<any>((resolve) => {
+      onValue(nodesRef, (snapshot) => {
+        resolve(snapshot.val() || {});
+      }, { onlyOnce: true });
+    });
+    
+    const existingNodes = snapshot as Record<string, any>;
+    const nodeNumbers = Object.keys(existingNodes)
+      .map(id => id.replace('node', ''))
+      .map(id => parseInt(id, 10))
+      .filter(id => !isNaN(id));
+    
+    nextNodeId = nodeNumbers.length > 0 ? Math.max(...nodeNumbers) + 1 : 1;
+    node.id = `node${nextNodeId}`;
+  }
+  
   const nodeRef = ref(database, `nodes/${node.id}`);
   await set(nodeRef, {
     name: node.name,
@@ -139,11 +164,13 @@ export const addNewNode = async (node: Node) => {
     location: node.location,
     type: node.type,
     alerts: {
-      gun_sound: false,
+      gun: false,
       footsteps: false,
       motion: false,
       whisper: false,
-      suspicious_activity: false
+      suspicious_activity: false,
+      drone: false,
+      help: false
     }
   });
   
@@ -190,11 +217,13 @@ export const seedInitialData = async () => {
         ...node,
         lastActivity: node.lastActivity.toISOString(),
         alerts: {
-          gun_sound: false,
+          gun: false,
           footsteps: false,
           motion: false,
           whisper: false,
-          suspicious_activity: false
+          suspicious_activity: false,
+          drone: false,
+          help: false
         }
       };
       

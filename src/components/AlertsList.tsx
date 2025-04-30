@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert } from "@/lib/types";
-import { AlertTriangle, Activity, MapPin } from "lucide-react";
+import { AlertTriangle, Volume2, MapPin, HelpCircle, DroneOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface AlertsListProps {
@@ -18,24 +18,28 @@ const AlertsList: React.FC<AlertsListProps> = ({ alerts }) => {
 
   const getAlertIcon = (type: Alert["type"]) => {
     switch (type) {
-      case "gun_sound":
+      case "gun":
         return <AlertTriangle className="h-4 w-4 text-alert-critical" />;
       case "footsteps":
         return <MapPin className="h-4 w-4 text-alert-warning" />;
       case "whisper":
-        return <Activity className="h-4 w-4 text-alert-warning" />;
+        return <Volume2 className="h-4 w-4 text-alert-warning" />;
       case "motion":
         return <MapPin className="h-4 w-4 text-alert-info" />;
       case "suspicious_activity":
         return <AlertTriangle className="h-4 w-4 text-alert-critical" />;
+      case "drone":
+        return <DroneOff className="h-4 w-4 text-alert-warning" />;
+      case "help":
+        return <HelpCircle className="h-4 w-4 text-alert-critical" />;
       default:
-        return <Activity className="h-4 w-4 text-alert-info" />;
+        return <AlertTriangle className="h-4 w-4 text-alert-info" />;
     }
   };
 
   const formatAlertType = (type: string) => {
     switch (type) {
-      case "gun_sound":
+      case "gun":
         return "Gunshots Detected";
       case "footsteps":
         return "Footsteps Detected";
@@ -45,13 +49,17 @@ const AlertsList: React.FC<AlertsListProps> = ({ alerts }) => {
         return "Motion Detected";
       case "suspicious_activity":
         return "Suspicious Activity";
+      case "drone":
+        return "Drone Detected";
+      case "help":
+        return "Help Call Detected";
       default:
         return type.replace(/_/g, " ");
     }
   };
 
   return (
-    <Card className="h-full">
+    <Card className="h-full border-army-khaki/30 bg-card/90">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium">Recent Alerts</CardTitle>
       </CardHeader>

@@ -18,8 +18,8 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { generateNewNode } from "@/lib/mockData";
 import { Plus } from "lucide-react";
+import { Node } from "@/lib/types";
 
 interface AddNodeModalProps {
   open: boolean;
@@ -49,7 +49,17 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ open, onClose, onAddNode })
         throw new Error("Invalid coordinates");
       }
       
-      const newNode = generateNewNode(name, sector, { lat, lng });
+      const newNode: Partial<Node> = {
+        name: name,
+        sector: sector,
+        status: "online",
+        battery: 100,
+        signalStrength: 95,
+        lastActivity: new Date(),
+        location: { lat, lng },
+        type: Math.random() > 0.7 ? "advanced" : "standard"
+      };
+      
       onAddNode(newNode);
       
       // Reset form
@@ -68,28 +78,29 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ open, onClose, onAddNode })
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md border-army-khaki/30 bg-card">
         <DialogHeader>
-          <DialogTitle>Deploy New Sensor Node</DialogTitle>
+          <DialogTitle className="text-foreground">Deploy New Sensor Node</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="grid w-full items-center gap-2">
-            <Label htmlFor="name">Node Name</Label>
+            <Label htmlFor="name" className="text-foreground">Node Name</Label>
             <Input
               id="name"
               placeholder="Enter node name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              className="bg-muted/50 border-army-khaki/30"
             />
           </div>
           <div className="grid w-full items-center gap-2">
-            <Label htmlFor="sector">Sector</Label>
+            <Label htmlFor="sector" className="text-foreground">Sector</Label>
             <Select value={sector} onValueChange={setSector} required>
-              <SelectTrigger id="sector">
+              <SelectTrigger id="sector" className="bg-muted/50 border-army-khaki/30">
                 <SelectValue placeholder="Select sector" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-card border-army-khaki/30">
                 <SelectItem value="Sector A">Sector A</SelectItem>
                 <SelectItem value="Sector B">Sector B</SelectItem>
                 <SelectItem value="Sector C">Sector C</SelectItem>
@@ -100,36 +111,43 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ open, onClose, onAddNode })
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid w-full items-center gap-2">
-              <Label htmlFor="latitude">Latitude</Label>
+              <Label htmlFor="latitude" className="text-foreground">Latitude</Label>
               <Input
                 id="latitude"
                 placeholder="E.g. 21.152"
                 value={latitude}
                 onChange={(e) => setLatitude(e.target.value)}
                 required
+                className="bg-muted/50 border-army-khaki/30"
               />
             </div>
             <div className="grid w-full items-center gap-2">
-              <Label htmlFor="longitude">Longitude</Label>
+              <Label htmlFor="longitude" className="text-foreground">Longitude</Label>
               <Input
                 id="longitude"
                 placeholder="E.g. 79.088"
                 value={longitude}
                 onChange={(e) => setLongitude(e.target.value)}
                 required
+                className="bg-muted/50 border-army-khaki/30"
               />
             </div>
           </div>
-          <DialogFooter className="sm:justify-end">
+          <DialogFooter className="sm:justify-end pt-2">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={loading}
+              className="border-army-khaki/30 text-foreground"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="bg-army-red hover:bg-army-red/90 text-white"
+            >
               {loading ? "Deploying..." : "Deploy Node"}
             </Button>
           </DialogFooter>
@@ -143,14 +161,14 @@ const AddNodeButton: React.FC<{
   onClick: () => void;
 }> = ({ onClick }) => {
   return (
-    <Card className="h-full">
+    <Card className="h-full border-army-khaki/30 bg-card/90">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium">Add Sensor Node</CardTitle>
       </CardHeader>
       <CardContent className="flex items-center justify-center h-20">
         <Button 
           onClick={onClick}
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+          className="w-full bg-army-red hover:bg-army-red/90 text-primary-foreground"
         >
           <Plus className="h-4 w-4 mr-2" /> Deploy New Node
         </Button>

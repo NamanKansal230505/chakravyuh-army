@@ -48,19 +48,19 @@ const Index = () => {
   // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center relative overflow-hidden">
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <img 
             src="/lovable-uploads/364fcfbe-bc96-49e9-9a38-693b92478f75.png" 
             alt="Background" 
             className="w-full h-full object-cover opacity-20"
           />
-          <div className="absolute inset-0 bg-background/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-army-olive/80 to-army-green/80" />
         </div>
         <div className="text-center space-y-4 z-10">
-          <div className="text-xl font-bold">Loading Chakravyuh</div>
+          <div className="text-xl font-bold gradient-heading">Loading Chakravyuh</div>
           <div className="flex justify-center">
-            <div className="w-8 h-8 border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-4 border-t-army-khaki border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
           </div>
         </div>
       </div>
@@ -70,20 +70,20 @@ const Index = () => {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center relative overflow-hidden">
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <img 
             src="/lovable-uploads/364fcfbe-bc96-49e9-9a38-693b92478f75.png" 
             alt="Background" 
             className="w-full h-full object-cover opacity-20"
           />
-          <div className="absolute inset-0 bg-background/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-army-olive/80 to-army-green/80" />
         </div>
         <div className="text-center space-y-4 max-w-md p-6 bg-red-500/10 rounded-lg z-10">
           <div className="text-xl font-bold text-red-500">Error Loading Data</div>
           <div className="text-muted-foreground">{error.message}</div>
           <button
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
+            className="px-4 py-2 bg-gradient-to-r from-army-red to-army-red/90 text-primary-foreground rounded-md"
             onClick={() => window.location.reload()}
           >
             Retry
@@ -94,7 +94,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden">
       {/* Background image with overlay */}
       <div className="absolute inset-0 overflow-hidden">
         <img 
@@ -102,7 +102,7 @@ const Index = () => {
           alt="Background" 
           className="w-full h-full object-cover opacity-20"
         />
-        <div className="absolute inset-0 bg-background/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-army-olive/60 to-army-green/70" />
       </div>
       
       {/* Alert sound component */}
@@ -116,7 +116,7 @@ const Index = () => {
       <div className="container py-6 space-y-6 relative z-10">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-army-red">Chakravyuh</h1>
+            <h1 className="text-2xl font-bold gradient-heading">Chakravyuh</h1>
             <p className="text-muted-foreground">Army Perimeter Defense System</p>
           </div>
         </header>

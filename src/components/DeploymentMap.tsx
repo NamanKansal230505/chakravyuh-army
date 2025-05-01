@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Node, NetworkConnection } from "@/lib/types";
@@ -51,12 +52,18 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
     
     // Create a rendering function to avoid flickering
     const renderCanvas = () => {
-      // Clear canvas with a dark background
-      ctx.fillStyle = 'rgba(33, 36, 27, 0.9)';
+      // Create gradient background
+      const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+      bgGradient.addColorStop(0, 'rgba(43, 46, 37, 0.95)');
+      bgGradient.addColorStop(1, 'rgba(33, 36, 27, 0.9)');
+      ctx.fillStyle = bgGradient;
       ctx.fillRect(0, 0, width, height);
       
-      // Draw a subtle network grid pattern
-      ctx.strokeStyle = 'rgba(235, 241, 222, 0.15)';
+      // Draw a subtle network grid pattern with gradient
+      const gridGradient = ctx.createLinearGradient(0, 0, width, height);
+      gridGradient.addColorStop(0, 'rgba(235, 241, 222, 0.1)');
+      gridGradient.addColorStop(1, 'rgba(235, 241, 222, 0.2)');
+      ctx.strokeStyle = gridGradient;
       ctx.lineWidth = 0.5;
       
       // Draw grid lines
@@ -75,7 +82,7 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
         ctx.stroke();
       }
       
-      // Draw network connections
+      // Draw network connections with gradient
       connections.forEach(connection => {
         const sourceNode = nodes.find(n => n.id === connection.source);
         const targetNode = nodes.find(n => n.id === connection.target);
@@ -94,16 +101,20 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
             height
           );
           
+          // Create gradient for connection line
+          const connectionGradient = ctx.createLinearGradient(
+            sourcePos.x, sourcePos.y, targetPos.x, targetPos.y
+          );
+          connectionGradient.addColorStop(0, `rgba(139, 125, 57, ${connection.strength / 100})`);
+          connectionGradient.addColorStop(1, `rgba(16, 185, 129, ${connection.strength / 100})`);
+          
           // Draw connection line with glow effect
           ctx.beginPath();
           ctx.moveTo(sourcePos.x, sourcePos.y);
           ctx.lineTo(targetPos.x, targetPos.y);
           
-          // Connection strength affects opacity
-          const connectionAlpha = connection.strength / 100;
-          
           // Draw outer glow
-          ctx.strokeStyle = `rgba(16, 185, 129, ${connectionAlpha * 0.4})`;
+          ctx.strokeStyle = connectionGradient;
           ctx.lineWidth = 6;
           ctx.stroke();
           
@@ -111,7 +122,7 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
           ctx.beginPath();
           ctx.moveTo(sourcePos.x, sourcePos.y);
           ctx.lineTo(targetPos.x, targetPos.y);
-          ctx.strokeStyle = `rgba(16, 185, 129, ${connectionAlpha})`;
+          ctx.strokeStyle = `rgba(210, 180, 140, ${connection.strength / 100})`;
           ctx.lineWidth = 2;
           ctx.stroke();
         }
@@ -121,20 +132,28 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
       nodes.forEach(node => {
         const { x, y } = latLngToXY(node.location.lat, node.location.lng, width, height);
         
-        // Node status color
-        let nodeColor;
+        // Node status color with gradients
+        let nodeGradient;
         switch (node.status) {
           case "online":
-            nodeColor = "#10B981"; // Green
+            nodeGradient = ctx.createRadialGradient(x, y, 0, x, y, 10);
+            nodeGradient.addColorStop(0, "#4B5320"); // Army olive center
+            nodeGradient.addColorStop(1, "#10B981"); // Green edge
             break;
           case "warning":
-            nodeColor = "#F97316"; // Orange
+            nodeGradient = ctx.createRadialGradient(x, y, 0, x, y, 10);
+            nodeGradient.addColorStop(0, "#8B7D39"); // Army khaki center
+            nodeGradient.addColorStop(1, "#F97316"); // Orange edge
             break;
           case "offline":
-            nodeColor = "#EF4444"; // Red
+            nodeGradient = ctx.createRadialGradient(x, y, 0, x, y, 10);
+            nodeGradient.addColorStop(0, "#654321"); // Army brown center
+            nodeGradient.addColorStop(1, "#EF4444"); // Red edge
             break;
           default:
-            nodeColor = "#10B981";
+            nodeGradient = ctx.createRadialGradient(x, y, 0, x, y, 10);
+            nodeGradient.addColorStop(0, "#4B5320");
+            nodeGradient.addColorStop(1, "#10B981");
         }
         
         // Node size based on type
@@ -144,15 +163,13 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
         // Draw node highlight/selection effect
         if (node.id === selectedNodeId) {
           // Outer glow for selected node
+          const glowGradient = ctx.createRadialGradient(x, y, nodeSize, x, y, nodeSize + 8);
+          glowGradient.addColorStop(0, "rgba(255, 255, 255, 0.5)");
+          glowGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+          
           ctx.beginPath();
           ctx.arc(x, y, nodeSize + 8, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
-          ctx.fill();
-          
-          // Inner glow
-          ctx.beginPath();
-          ctx.arc(x, y, nodeSize + 4, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+          ctx.fillStyle = glowGradient;
           ctx.fill();
         }
         
@@ -162,10 +179,10 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
         ctx.shadowOffsetX = 2;
         ctx.shadowOffsetY = 2;
         
-        // Main node circle
+        // Main node circle with gradient
         ctx.beginPath();
         ctx.arc(x, y, nodeSize, 0, Math.PI * 2);
-        ctx.fillStyle = nodeColor;
+        ctx.fillStyle = nodeGradient;
         ctx.fill();
         
         // Remove shadow for border
@@ -177,13 +194,11 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
         ctx.stroke();
         
         // Add a small label for node ID
-        if (node.id === selectedNodeId || node.type === "gateway") {
-          ctx.font = "10px Arial";
-          ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-          ctx.textAlign = "center";
-          const nodeNumber = node.id.replace("node", "");
-          ctx.fillText(nodeNumber, x, y + nodeSize + 12);
-        }
+        ctx.font = "10px Arial";
+        ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+        ctx.textAlign = "center";
+        const nodeNumber = node.id.replace("node", "");
+        ctx.fillText(nodeNumber, x, y + nodeSize + 12);
       });
     };
     
@@ -247,7 +262,7 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
   };
 
   return (
-    <Card className="h-full border-army-khaki/30 bg-card/90">
+    <Card className="h-full border-army-khaki/30 bg-gradient-to-b from-army-olive/80 to-army-green/80">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium">Deployment Map</CardTitle>
       </CardHeader>

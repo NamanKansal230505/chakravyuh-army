@@ -54,6 +54,8 @@
 
   body {
     @apply bg-background text-foreground;
+    background: linear-gradient(135deg, hsl(83 20% 17%) 0%, hsl(90 14% 20%) 100%);
+    background-attachment: fixed;
   }
 }
 
@@ -79,14 +81,18 @@
   }
 
   .army-card {
-    @apply bg-card border-2 border-army-khaki/30 shadow-md;
+    @apply bg-gradient-to-br from-army-olive/40 to-army-green/50 border-2 border-army-khaki/30 shadow-md backdrop-blur-sm;
   }
   
   .army-button {
-    @apply bg-army-red hover:bg-army-red/90 text-white font-medium;
+    @apply bg-gradient-to-r from-army-red to-army-red/90 hover:from-army-red/90 hover:to-army-red text-white font-medium;
   }
 
   .army-input {
     @apply bg-muted/50 border-army-khaki/30 focus:border-army-khaki;
+  }
+  
+  .gradient-heading {
+    @apply bg-gradient-to-r from-army-khaki to-army-tan bg-clip-text text-transparent;
   }
 }

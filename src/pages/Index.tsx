@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import NetworkStatus from "@/components/NetworkStatus";
 import { AddNodeButton, AddNodeModal } from "@/components/AddNodeModal";
 import AlertsList from "@/components/AlertsList";
@@ -7,6 +7,7 @@ import ActivityLog from "@/components/ActivityLog";
 import DeploymentMap from "@/components/DeploymentMap";
 import NodeDetails from "@/components/NodeDetails";
 import AlertSound from "@/components/AlertSound";
+import AlertPopup from "@/components/AlertPopup";
 import { toast } from "@/components/ui/use-toast";
 import { Node } from "@/lib/types";
 import { useFirebase } from "@/hooks/useFirebase";
@@ -16,6 +17,7 @@ const Index = () => {
   const location = useLocation();
   const [isAddNodeModalOpen, setIsAddNodeModalOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [showAlertPopup, setShowAlertPopup] = useState(false);
   
   // Use our Firebase hook
   const {
@@ -45,18 +47,24 @@ const Index = () => {
     });
   };
 
+  // Show temporary alert popup when alerts appear
+  useEffect(() => {
+    if (alerts.length > 0 && alertSeverity === 'critical') {
+      setShowAlertPopup(true);
+      
+      // Hide popup after 5 seconds
+      const timerId = setTimeout(() => {
+        setShowAlertPopup(false);
+      }, 5000);
+      
+      return () => clearTimeout(timerId);
+    }
+  }, [alerts, alertSeverity]);
+
   // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden">
-          <img 
-            src="/lovable-uploads/364fcfbe-bc96-49e9-9a38-693b92478f75.png" 
-            alt="Background" 
-            className="w-full h-full object-cover opacity-20"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-army-olive/80 to-army-green/80" />
-        </div>
+      <div className="min-h-screen flex items-center justify-center relative">
         <div className="text-center space-y-4 z-10">
           <div className="text-xl font-bold gradient-heading">Loading Chakravyuh</div>
           <div className="flex justify-center">
@@ -70,15 +78,7 @@ const Index = () => {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden">
-          <img 
-            src="/lovable-uploads/364fcfbe-bc96-49e9-9a38-693b92478f75.png" 
-            alt="Background" 
-            className="w-full h-full object-cover opacity-20"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-army-olive/80 to-army-green/80" />
-        </div>
+      <div className="min-h-screen flex items-center justify-center relative">
         <div className="text-center space-y-4 max-w-md p-6 bg-red-500/10 rounded-lg z-10">
           <div className="text-xl font-bold text-red-500">Error Loading Data</div>
           <div className="text-muted-foreground">{error.message}</div>
@@ -94,23 +94,21 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Background image with overlay */}
-      <div className="absolute inset-0 overflow-hidden">
-        <img 
-          src="/lovable-uploads/364fcfbe-bc96-49e9-9a38-693b92478f75.png" 
-          alt="Background" 
-          className="w-full h-full object-cover opacity-20"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-army-olive/60 to-army-green/70" />
-      </div>
-      
+    <div className="min-h-screen relative bg-gradient-to-b from-army-olive/80 to-army-green/90">
       {/* Alert sound component */}
       <AlertSound 
         playSound={shouldPlayAlertSound} 
         severity={alertSeverity} 
         onSoundPlayed={handleSoundPlayed}
       />
+      
+      {/* Alert popup for drone surveillance */}
+      {showAlertPopup && (
+        <AlertPopup 
+          severity={alertSeverity}
+          onClose={() => setShowAlertPopup(false)}
+        />
+      )}
       
       {/* Main content */}
       <div className="container py-6 space-y-6 relative z-10">

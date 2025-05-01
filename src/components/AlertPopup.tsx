@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
-import { Drone, AlertTriangle } from 'lucide-react';
+import { Send, AlertTriangle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 interface AlertPopupProps {
@@ -64,7 +64,7 @@ const AlertPopup: React.FC<AlertPopupProps> = ({ severity, onClose }) => {
             disabled={isDeploying}
             className="bg-gradient-to-r from-army-red to-army-red/90 hover:from-army-red/90 hover:to-army-red flex items-center gap-2"
           >
-            <Drone className="h-4 w-4" />
+            <Send className="h-4 w-4" />
             {isDeploying ? "Deploying..." : "Arm Surveillance Drone"}
           </AlertDialogAction>
         </AlertDialogFooter>

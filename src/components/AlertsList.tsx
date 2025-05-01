@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert } from "@/lib/types";
-import { AlertTriangle, Volume2, MapPin, HelpCircle, Drone } from "lucide-react";
+import { AlertTriangle, Volume2, MapPin, HelpCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface AlertsListProps {
@@ -42,7 +42,7 @@ const AlertsList: React.FC<AlertsListProps> = ({ alerts }) => {
       case "suspicious_activity":
         return <AlertTriangle className="h-4 w-4 text-alert-critical" />;
       case "drone":
-        return <Drone className="h-4 w-4 text-alert-warning" />;
+        return <MapPin className="h-4 w-4 text-alert-warning" />; // Using MapPin for drone as well
       case "help":
         return <HelpCircle className="h-4 w-4 text-alert-critical" />;
       default:

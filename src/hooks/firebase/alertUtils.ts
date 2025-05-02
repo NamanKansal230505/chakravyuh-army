@@ -70,14 +70,16 @@ export const processNodeAlerts = (
       alerts.push(newAlert);
       
       // Set alert severity for sound (prioritize critical > warning > info)
+      // The main change: always set the sound flag to true for all alerts
       if (
         severity === 'critical' || 
         (severity === 'warning' && currentAlertSeverity !== 'critical') ||
         (severity === 'info' && currentAlertSeverity === 'info')
       ) {
         setAlertSeverity(severity);
-        setShouldPlayAlertSound(true);
       }
+      // Always play sound regardless of severity
+      setShouldPlayAlertSound(true);
     }
   });
   

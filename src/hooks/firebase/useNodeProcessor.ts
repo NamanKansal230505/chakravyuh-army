@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { Node, Alert } from '@/lib/types';
 import { processNodeAlerts } from './alertUtils';
@@ -29,7 +28,7 @@ export function useNodeProcessor() {
           if (isActive) {
             setTimeout(() => {
               updateNodeAlert(node.id, type as any, false)
-                .catch(err => console.error(`Failed to reset alert ${type} for node ${node.id}:`, err));
+                // .catch(err => console.error(Failed to reset alert ${type} for node ${node.id}:, err));
             }, 15000); // 15 seconds
           }
         });

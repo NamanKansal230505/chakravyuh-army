@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Node, Alert, AlertType } from '@/lib/types';
 
@@ -49,13 +48,9 @@ export const processNodeAlerts = (
   // Process each alert type
   (Object.entries(node.alerts) as [AlertType, boolean][]).forEach(([alertType, isActive]) => {
     if (isActive) {
-      // Get the proper description for this alert type
       const description = getAlertDescription(alertType);
-      
-      // Get severity for this alert type
       const severity = alertSeverity[alertType];
       
-      // Create alert object
       const newAlert: Alert = {
         id: `${node.id}-${alertType}-${Date.now()}`,
         type: alertType,
@@ -66,18 +61,16 @@ export const processNodeAlerts = (
         acknowledged: false
       };
       
-      // Add to alerts list
       alerts.push(newAlert);
       
-      // Set alert severity for sound (prioritize critical > warning > info)
       if (
         severity === 'critical' || 
         (severity === 'warning' && currentAlertSeverity !== 'critical') ||
         (severity === 'info' && currentAlertSeverity === 'info')
       ) {
         setAlertSeverity(severity);
-        setShouldPlayAlertSound(true);
       }
+      setShouldPlayAlertSound(true);
     }
   });
   

@@ -1,7 +1,6 @@
-
 import { Node, Alert, NetworkConnection, AlertType } from "./types";
 
-// Mock node data (limited to just 3 nodes)
+// Mock node data (limited to just 2 nodes)
 export const mockNodes: Node[] = [
   {
     id: "node1",
@@ -11,7 +10,7 @@ export const mockNodes: Node[] = [
     battery: 85,
     signalStrength: 92,
     lastActivity: new Date(Date.now() - 2 * 60 * 1000), // 2 minutes ago
-    location: { lat: 21.152, lng: 79.088 },
+    location: { lat: 21, lng: 79 },
     type: "gateway"
   },
   {
@@ -22,19 +21,8 @@ export const mockNodes: Node[] = [
     battery: 72,
     signalStrength: 88,
     lastActivity: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-    location: { lat: 21.155, lng: 79.091 },
+    location: { lat: 21.152, lng: 79.088 },
     type: "advanced"
-  },
-  {
-    id: "node3",
-    name: "Node #03",
-    sector: "Sector C",
-    status: "online",
-    battery: 95,
-    signalStrength: 90,
-    lastActivity: new Date(Date.now() - 1 * 60 * 1000), // 1 minute ago
-    location: { lat: 21.148, lng: 79.095 },
-    type: "standard"
   }
 ];
 
@@ -60,7 +48,7 @@ const alertSeverities: Record<AlertType, "critical" | "warning" | "info"> = {
   help: "critical"
 };
 
-// Generate mock alerts (limited to our 3 nodes)
+// Generate mock alerts (limited to our 2 nodes)
 export const mockAlerts: Alert[] = [
   // Recent alerts for node1
   {
@@ -81,30 +69,18 @@ export const mockAlerts: Alert[] = [
     description: "Multiple Footsteps",
     severity: "warning",
     acknowledged: false
-  },
-  // Recent alerts for node3
-  {
-    id: "alert3",
-    type: "motion",
-    nodeId: "node3",
-    timestamp: new Date(Date.now() - 3 * 60 * 1000),
-    description: "Motion Alert",
-    severity: "info",
-    acknowledged: false
   }
 ];
 
-// Mock network connections between the 3 nodes
+// Mock network connections between the 2 nodes
 export const mockConnections: NetworkConnection[] = [
-  { source: "node1", target: "node2", strength: 88 },
-  { source: "node2", target: "node3", strength: 92 },
-  { source: "node1", target: "node3", strength: 82 }
+  { source: "node1", target: "node2", strength: 88 }
 ];
 
 // Mock network status
 export const mockNetworkStatus = {
-  activeNodes: 3,
-  totalNodes: 3,
+  activeNodes: 2,
+  totalNodes: 2,
   networkHealth: 95
 };
 

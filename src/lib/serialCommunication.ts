@@ -1,4 +1,3 @@
-
 import { Node, Alert, NetworkConnection, NetworkStatus, AlertType } from "./types";
 
 // Serial port interface for Web Serial API
@@ -19,17 +18,28 @@ class SerialCommunication {
   // Get available serial ports
   async getAvailablePorts(): Promise<SerialPortInfo[]> {
     try {
+      console.log('Checking for Web Serial API support...');
+      
       if (!navigator.serial) {
+        console.error('Web Serial API not supported in this browser');
         throw new Error('Web Serial API not supported');
       }
       
+      console.log('Web Serial API supported, getting ports...');
       const ports = await navigator.serial.getPorts();
-      return ports.map((port, index) => ({
-        port,
-        name: `COM${index + 1}`,
-        vendorId: port.getInfo().usbVendorId,
-        productId: port.getInfo().usbProductId
-      }));
+      console.log('Found ports:', ports.length);
+      
+      return ports.map((port, index) => {
+        const info = port.getInfo();
+        console.log(`Port ${index}:`, info);
+        
+        return {
+          port,
+          name: `COM${index + 1}`,
+          vendorId: info.usbVendorId,
+          productId: info.usbProductId
+        };
+      });
     } catch (error) {
       console.error('Error getting serial ports:', error);
       return [];
@@ -39,16 +49,21 @@ class SerialCommunication {
   // Request access to a new serial port
   async requestPort(): Promise<SerialPortInfo | null> {
     try {
+      console.log('Requesting new serial port...');
+      
       if (!navigator.serial) {
         throw new Error('Web Serial API not supported');
       }
 
       const port = await navigator.serial.requestPort();
+      console.log('Port requested successfully:', port);
+      
+      const info = port.getInfo();
       return {
         port,
         name: `COM${Date.now()}`,
-        vendorId: port.getInfo().usbVendorId,
-        productId: port.getInfo().usbProductId
+        vendorId: info.usbVendorId,
+        productId: info.usbProductId
       };
     } catch (error) {
       console.error('Error requesting serial port:', error);

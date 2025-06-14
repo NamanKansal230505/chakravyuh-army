@@ -140,9 +140,9 @@ const DeploymentMap: React.FC<DeploymentMapProps> = ({
       markersRef.current.set(node.id, marker);
     });
 
-    // Fit map to show all nodes
+    // Fit map to show all nodes if any exist
     if (nodes.length > 0) {
-      const group = new L.featureGroup(Array.from(markersRef.current.values()));
+      const group = L.featureGroup(Array.from(markersRef.current.values()));
       map.fitBounds(group.getBounds().pad(0.1));
     }
   }, [nodes, connections, selectedNodeId, onSelectNode]);

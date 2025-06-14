@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import NetworkStatus from "@/components/NetworkStatus";
-import { AddNodeButton, AddNodeModal } from "@/components/AddNodeModal";
+import SerialPortSelector from "@/components/SerialPortSelector";
 import AlertsList from "@/components/AlertsList";
 import ActivityLog from "@/components/ActivityLog";
 import DeploymentMap from "@/components/DeploymentMap";
@@ -10,16 +10,13 @@ import AlertSound from "@/components/AlertSound";
 import AlertPopup from "@/components/AlertPopup";
 import { toast } from "@/components/ui/use-toast";
 import { Node } from "@/lib/types";
-import { useFirebase } from "@/hooks/useFirebase";
-import { useLocation } from "react-router-dom";
+import { useSerial } from "@/hooks/useSerial";
 
 const Index = () => {
-  const location = useLocation();
-  const [isAddNodeModalOpen, setIsAddNodeModalOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [showAlertPopup, setShowAlertPopup] = useState(false);
   
-  // Use our Firebase hook
+  // Use our Serial hook instead of Firebase
   const {
     nodes,
     alerts,
@@ -27,13 +24,16 @@ const Index = () => {
     networkStatus,
     loading,
     error,
-    handleAddNode,
+    isConnected,
+    availablePorts,
+    connectToPort,
+    requestNewPort,
+    disconnect,
+    refreshPorts,
     shouldPlayAlertSound,
     alertSeverity,
     handleSoundPlayed
-  } = useFirebase({
-    seedDataIfEmpty: true
-  });
+  } = useSerial();
 
   // Handle node selection
   const handleSelectNode = (node: Node) => {
@@ -80,7 +80,7 @@ const Index = () => {
     return (
       <div className="min-h-screen flex items-center justify-center relative">
         <div className="text-center space-y-4 max-w-md p-6 bg-red-500/10 rounded-lg z-10">
-          <div className="text-xl font-bold text-red-500">Error Loading Data</div>
+          <div className="text-xl font-bold text-red-500">Error</div>
           <div className="text-muted-foreground">{error.message}</div>
           <button
             className="px-4 py-2 bg-gradient-to-r from-army-red to-army-red/90 text-primary-foreground rounded-md"
@@ -102,7 +102,7 @@ const Index = () => {
         onSoundPlayed={handleSoundPlayed}
       />
       
-      {/* Alert popup for drone surveillance */}
+      {/* Alert popup for critical alerts */}
       {showAlertPopup && (
         <AlertPopup 
           severity={alertSeverity}
@@ -115,13 +115,21 @@ const Index = () => {
         <header className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold gradient-heading">Chakravyuh</h1>
-            <p className="text-muted-foreground">Army Perimeter Defense System</p>
+            <p className="text-muted-foreground">Army Perimeter Defense System - LoRaWAN Edition</p>
           </div>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <NetworkStatus status={networkStatus} />
-          <AddNodeButton onClick={() => setIsAddNodeModalOpen(true)} />
+          <SerialPortSelector
+            availablePorts={availablePorts}
+            isConnected={isConnected}
+            loading={loading}
+            onConnect={connectToPort}
+            onDisconnect={disconnect}
+            onRequestNewPort={requestNewPort}
+            onRefreshPorts={refreshPorts}
+          />
           <AlertsList alerts={alerts} />
         </div>
 
@@ -143,12 +151,6 @@ const Index = () => {
           <ActivityLog alerts={alerts} />
         </div>
       </div>
-
-      <AddNodeModal
-        open={isAddNodeModalOpen}
-        onClose={() => setIsAddNodeModalOpen(false)}
-        onAddNode={handleAddNode}
-      />
     </div>
   );
 };

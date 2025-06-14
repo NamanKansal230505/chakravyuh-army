@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Node, Alert, NetworkConnection, NetworkStatus, AlertType } from '@/lib/types';
 import { serialComm, parseMotionData, getDefaultNetworkStatus, getDefaultConnections } from '@/lib/serialCommunication';
@@ -45,9 +46,12 @@ export function useSerial(): UseSerialReturn {
   // Refresh available ports
   const refreshPorts = useCallback(async () => {
     try {
+      console.log('Refreshing available ports...');
       const ports = await serialComm.getAvailablePorts();
+      console.log('Available ports found:', ports);
       setAvailablePorts(ports);
     } catch (err) {
+      console.error('Error refreshing ports:', err);
       setError(err instanceof Error ? err : new Error('Failed to get serial ports'));
     }
   }, []);
@@ -55,6 +59,7 @@ export function useSerial(): UseSerialReturn {
   // Connect to a specific port
   const connectToPort = useCallback(async (portInfo: SerialPortInfo): Promise<boolean> => {
     try {
+      console.log('Connecting to port:', portInfo);
       setLoading(true);
       setError(null);
       
@@ -62,11 +67,14 @@ export function useSerial(): UseSerialReturn {
       setIsConnected(success);
       
       if (success) {
-        console.log('Connected to serial port:', portInfo.name);
+        console.log('Successfully connected to serial port:', portInfo.name);
+      } else {
+        console.error('Failed to connect to serial port');
       }
       
       return success;
     } catch (err) {
+      console.error('Error connecting to port:', err);
       setError(err instanceof Error ? err : new Error('Failed to connect to serial port'));
       return false;
     } finally {
@@ -77,13 +85,17 @@ export function useSerial(): UseSerialReturn {
   // Request access to a new port
   const requestNewPort = useCallback(async (): Promise<boolean> => {
     try {
+      console.log('Requesting new port...');
       const portInfo = await serialComm.requestPort();
       if (portInfo) {
+        console.log('New port obtained:', portInfo);
         setAvailablePorts(prev => [...prev, portInfo]);
         return await connectToPort(portInfo);
       }
+      console.log('No port selected by user');
       return false;
     } catch (err) {
+      console.error('Error requesting new port:', err);
       setError(err instanceof Error ? err : new Error('Failed to request new port'));
       return false;
     }
@@ -92,9 +104,12 @@ export function useSerial(): UseSerialReturn {
   // Disconnect from current port
   const disconnect = useCallback(async () => {
     try {
+      console.log('Disconnecting from serial port...');
       await serialComm.disconnect();
       setIsConnected(false);
+      console.log('Disconnected successfully');
     } catch (err) {
+      console.error('Error disconnecting:', err);
       setError(err instanceof Error ? err : new Error('Failed to disconnect'));
     }
   }, []);
@@ -106,6 +121,7 @@ export function useSerial(): UseSerialReturn {
 
   // Update node function
   const updateNode = useCallback((nodeId: string, updates: Partial<Node>) => {
+    console.log('Updating node:', nodeId, 'with updates:', updates);
     setNodes(prevNodes => 
       prevNodes.map(node => 
         node.id === nodeId ? { ...node, ...updates } : node
@@ -115,18 +131,28 @@ export function useSerial(): UseSerialReturn {
 
   // Process incoming serial data for motion detection
   const handleSerialData = useCallback((data: string) => {
-    console.log('Received serial data:', data);
+    console.log('handleSerialData called with:', data);
     
     const parsed = parseMotionData(data);
-    if (!parsed) return;
+    if (!parsed) {
+      console.log('No parsed data returned from parseMotionData');
+      return;
+    }
+
+    console.log('Parsed motion data:', parsed);
 
     // Process each node's motion data
     parsed.forEach(({ nodeId, motion }) => {
+      console.log('Processing node:', nodeId, 'motion:', motion);
+      
       setNodes(prevNodes => {
+        console.log('Current nodes before update:', prevNodes.map(n => n.id));
+        
         const existingNodeIndex = prevNodes.findIndex(n => n.id === nodeId);
         
         if (existingNodeIndex >= 0) {
           // Update existing node
+          console.log('Updating existing node at index:', existingNodeIndex);
           const updatedNodes = [...prevNodes];
           updatedNodes[existingNodeIndex] = {
             ...updatedNodes[existingNodeIndex],
@@ -142,9 +168,11 @@ export function useSerial(): UseSerialReturn {
             lastActivity: new Date(),
             status: 'online' as const
           };
+          console.log('Updated node:', updatedNodes[existingNodeIndex]);
           return updatedNodes;
         } else {
           // Create new node with default coordinates
+          console.log('Creating new node for:', nodeId);
           const newNode: Node = {
             id: nodeId,
             name: `Node #${nodeId.replace('node', '')}`,
@@ -168,12 +196,16 @@ export function useSerial(): UseSerialReturn {
               help: false
             }
           };
-          return [...prevNodes, newNode];
+          console.log('Created new node:', newNode);
+          const newNodes = [...prevNodes, newNode];
+          console.log('New nodes array:', newNodes.map(n => n.id));
+          return newNodes;
         }
       });
 
       // Create alert if motion is detected
       if (motion) {
+        console.log('Motion detected, creating alert for:', nodeId);
         const newAlert: Alert = {
           id: `${nodeId}-motion-${Date.now()}`,
           type: 'motion' as AlertType,
@@ -184,7 +216,12 @@ export function useSerial(): UseSerialReturn {
           acknowledged: false
         };
 
-        setAlerts(prev => [newAlert, ...prev.slice(0, 99)]); // Keep last 100 alerts
+        setAlerts(prev => {
+          console.log('Adding new alert:', newAlert);
+          const newAlerts = [newAlert, ...prev.slice(0, 99)];
+          console.log('Current alerts count:', newAlerts.length);
+          return newAlerts;
+        });
         setAlertSeverity('info');
         setShouldPlayAlertSound(true);
       }
@@ -193,12 +230,14 @@ export function useSerial(): UseSerialReturn {
 
   // Setup serial data listener
   useEffect(() => {
+    console.log('Setting up serial data listener...');
     serialComm.onData(handleSerialData);
     
     // Initial port refresh
     refreshPorts();
     
     return () => {
+      console.log('Cleaning up serial connection...');
       serialComm.disconnect();
     };
   }, [handleSerialData, refreshPorts]);
@@ -206,12 +245,19 @@ export function useSerial(): UseSerialReturn {
   // Update network status based on nodes
   useEffect(() => {
     const activeNodes = nodes.filter(n => n.status === 'online').length;
-    setNetworkStatus({
+    const newNetworkStatus = {
       activeNodes,
       totalNodes: nodes.length,
       networkHealth: nodes.length > 0 ? Math.round((activeNodes / nodes.length) * 100) : 0
-    });
+    };
+    console.log('Updating network status:', newNetworkStatus);
+    setNetworkStatus(newNetworkStatus);
   }, [nodes]);
+
+  // Debug current state
+  useEffect(() => {
+    console.log('Current state - nodes:', nodes.length, 'alerts:', alerts.length, 'connected:', isConnected);
+  }, [nodes, alerts, isConnected]);
 
   return {
     nodes,

@@ -1,3 +1,4 @@
+
 import { Node, Alert, NetworkConnection, NetworkStatus, AlertType } from "./types";
 
 // Serial port interface for Web Serial API
@@ -81,7 +82,10 @@ class SerialCommunication {
   // Connect to a serial port
   async connect(portInfo: SerialPortInfo, baudRate: number = 115200): Promise<boolean> {
     try {
+      console.log('Attempting to connect to serial port with baud rate:', baudRate);
+      
       if (this.isConnected) {
+        console.log('Already connected, disconnecting first...');
         await this.disconnect();
       }
 
@@ -91,12 +95,14 @@ class SerialCommunication {
       if (this.port.readable) {
         this.reader = this.port.readable.getReader();
         this.isConnected = true;
-        this.isBootSequenceComplete = false; // Reset boot sequence flag
-        this.dataBuffer = ''; // Reset data buffer
+        this.isBootSequenceComplete = false;
+        this.dataBuffer = '';
+        console.log('Successfully connected to serial port, starting to read data...');
         this.startReading();
         return true;
       }
       
+      console.error('Port opened but not readable');
       return false;
     } catch (error) {
       console.error('Error connecting to serial port:', error);
@@ -107,6 +113,8 @@ class SerialCommunication {
   // Disconnect from serial port
   async disconnect(): Promise<void> {
     try {
+      console.log('Disconnecting from serial port...');
+      
       if (this.reader) {
         await this.reader.cancel();
         this.reader.releaseLock();
@@ -121,6 +129,7 @@ class SerialCommunication {
       this.isConnected = false;
       this.isBootSequenceComplete = false;
       this.dataBuffer = '';
+      console.log('Successfully disconnected from serial port');
     } catch (error) {
       console.error('Error disconnecting from serial port:', error);
     }
@@ -128,7 +137,6 @@ class SerialCommunication {
 
   // Check if line indicates end of ESP32 boot sequence
   private isBootSequenceEnd(line: string): boolean {
-    // Look for patterns that indicate boot sequence is complete
     const bootEndPatterns = [
       /entry 0x[0-9a-fA-F]+/,
       /CPU startup complete/,
@@ -159,13 +167,21 @@ class SerialCommunication {
 
   // Start reading serial data
   private async startReading(): Promise<void> {
-    if (!this.reader) return;
+    if (!this.reader) {
+      console.error('No reader available for serial port');
+      return;
+    }
+
+    console.log('Starting to read serial data...');
 
     try {
       while (this.isConnected && this.reader) {
         const { value, done } = await this.reader.read();
         
-        if (done) break;
+        if (done) {
+          console.log('Serial reading completed');
+          break;
+        }
         
         if (value) {
           const text = new TextDecoder().decode(value);
@@ -173,13 +189,13 @@ class SerialCommunication {
           
           // Process complete lines
           const lines = this.dataBuffer.split('\n');
-          this.dataBuffer = lines.pop() || ''; // Keep incomplete line in buffer
+          this.dataBuffer = lines.pop() || '';
           
           for (const line of lines) {
             const trimmedLine = line.trim();
             if (!trimmedLine) continue;
             
-            console.log('Raw serial line:', trimmedLine);
+            console.log('Raw serial line received:', trimmedLine);
             
             // Check if boot sequence is complete
             if (!this.isBootSequenceComplete) {
@@ -195,7 +211,7 @@ class SerialCommunication {
               }
               
               // If we see motion data pattern, consider boot complete
-              if (trimmedLine.includes('[') && trimmedLine.includes('node')) {
+              if (trimmedLine.includes(':') && /node\d+:\d+/.test(trimmedLine)) {
                 console.log('Motion data detected, boot sequence complete');
                 this.isBootSequenceComplete = true;
               }
@@ -203,8 +219,10 @@ class SerialCommunication {
             
             // Only process data after boot sequence is complete
             if (this.isBootSequenceComplete && this.onDataCallback) {
-              console.log('Processing motion data:', trimmedLine);
+              console.log('Processing motion data line:', trimmedLine);
               this.onDataCallback(trimmedLine);
+            } else {
+              console.log('Skipping line - boot sequence not complete or no callback');
             }
           }
         }
@@ -217,6 +235,7 @@ class SerialCommunication {
 
   // Set callback for received data
   onData(callback: (data: string) => void): void {
+    console.log('Setting data callback for serial communication');
     this.onDataCallback = callback;
   }
 
@@ -233,6 +252,7 @@ export const serialComm = new SerialCommunication();
 export const parseMotionData = (data: string): { nodeId: string; motion: boolean }[] | null => {
   try {
     const trimmedData = data.trim();
+    console.log('Parsing motion data:', trimmedData);
     
     // Check if this is a single node status line (nodeX:Y format)
     if (trimmedData.includes(':')) {
@@ -241,17 +261,26 @@ export const parseMotionData = (data: string): { nodeId: string; motion: boolean
         const nodeId = parts[0].toLowerCase().trim();
         const value = parseInt(parts[1].trim(), 10);
         
+        console.log('Parsed nodeId:', nodeId, 'value:', value);
+        
         if (!isNaN(value) && (value === 0 || value === 1)) {
-          return [{
+          const result = [{
             nodeId,
             motion: value === 1
           }];
+          console.log('Successfully parsed motion data:', result);
+          return result;
+        } else {
+          console.log('Invalid value for motion data:', value);
         }
+      } else {
+        console.log('Invalid format - wrong number of parts:', parts.length);
       }
     }
     
     // Fallback: try to parse old bracket format [node1:1 node2:0 node3:0] if present
     if (trimmedData.includes('[') && trimmedData.includes(']')) {
+      console.log('Attempting to parse bracket format');
       const cleanData = trimmedData.replace(/[\[\]]/g, '');
       const nodePairs = cleanData.split(' ').filter(pair => pair.length > 0);
       
@@ -272,9 +301,13 @@ export const parseMotionData = (data: string): { nodeId: string; motion: boolean
         }
       }
       
-      return results.length > 0 ? results : null;
+      if (results.length > 0) {
+        console.log('Successfully parsed bracket format data:', results);
+        return results;
+      }
     }
     
+    console.log('No valid motion data found in:', trimmedData);
     return null;
   } catch (error) {
     console.error('Error parsing motion data:', error);

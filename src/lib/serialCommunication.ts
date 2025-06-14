@@ -1,4 +1,3 @@
-
 import { Node, Alert, NetworkConnection, NetworkStatus, AlertType } from "./types";
 
 // Serial port interface for Web Serial API
@@ -196,6 +195,11 @@ class SerialCommunication {
             if (!trimmedLine) continue;
             
             console.log('Raw serial line received:', trimmedLine);
+            
+            // Send to monitor if available
+            if ((window as any).serialMonitorLog) {
+              (window as any).serialMonitorLog(trimmedLine);
+            }
             
             // Check if boot sequence is complete
             if (!this.isBootSequenceComplete) {

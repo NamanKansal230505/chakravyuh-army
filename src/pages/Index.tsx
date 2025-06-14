@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import NetworkStatus from "@/components/NetworkStatus";
 import SerialPortSelector from "@/components/SerialPortSelector";
+import SerialMonitor from "@/components/SerialMonitor";
 import AlertsList from "@/components/AlertsList";
 import ActivityLog from "@/components/ActivityLog";
 import DeploymentMap from "@/components/DeploymentMap";
@@ -133,6 +133,11 @@ const Index = () => {
             onRefreshPorts={refreshPorts}
           />
           <AlertsList alerts={alerts} />
+        </div>
+
+        {/* Add Serial Monitor */}
+        <div className="grid grid-cols-1 gap-4">
+          <SerialMonitor isConnected={isConnected} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

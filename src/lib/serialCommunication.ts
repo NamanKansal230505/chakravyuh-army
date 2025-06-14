@@ -1,4 +1,3 @@
-
 import { Node, Alert, NetworkConnection, NetworkStatus, AlertType } from "./types";
 
 // Serial port interface for Web Serial API
@@ -78,7 +77,7 @@ class SerialCommunication {
   }
 
   // Connect to a serial port
-  async connect(portInfo: SerialPortInfo, baudRate: number = 9600): Promise<boolean> {
+  async connect(portInfo: SerialPortInfo, baudRate: number = 115200): Promise<boolean> {
     try {
       if (this.isConnected) {
         await this.disconnect();

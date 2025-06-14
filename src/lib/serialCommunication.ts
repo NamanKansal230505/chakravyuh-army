@@ -15,14 +15,19 @@ class SerialCommunication {
   private isConnected = false;
   private onDataCallback: ((data: string) => void) | null = null;
 
+  // Check if Web Serial API is supported
+  isSupported(): boolean {
+    return 'serial' in navigator;
+  }
+
   // Get available serial ports
   async getAvailablePorts(): Promise<SerialPortInfo[]> {
     try {
       console.log('Checking for Web Serial API support...');
       
-      if (!navigator.serial) {
+      if (!this.isSupported()) {
         console.error('Web Serial API not supported in this browser');
-        throw new Error('Web Serial API not supported');
+        throw new Error('Web Serial API not supported in this browser. Please use Chrome, Edge, or Opera with HTTPS.');
       }
       
       console.log('Web Serial API supported, getting ports...');
@@ -51,8 +56,8 @@ class SerialCommunication {
     try {
       console.log('Requesting new serial port...');
       
-      if (!navigator.serial) {
-        throw new Error('Web Serial API not supported');
+      if (!this.isSupported()) {
+        throw new Error('Web Serial API not supported in this browser. Please use Chrome, Edge, or Opera with HTTPS.');
       }
 
       const port = await navigator.serial.requestPort();

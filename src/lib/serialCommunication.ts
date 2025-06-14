@@ -1,3 +1,4 @@
+
 import { Node, Alert, NetworkConnection, NetworkStatus, AlertType } from "./types";
 
 // Serial port interface for Web Serial API
@@ -157,29 +158,33 @@ class SerialCommunication {
 // Create singleton instance
 export const serialComm = new SerialCommunication();
 
-// Parse LoRaWAN data format
-export const parseLoRaWANData = (data: string): { nodeId: string; alertType: AlertType; value: number } | null => {
+// Parse LoRaWAN motion data format: [node1:1 node2:0 node3:0]
+export const parseMotionData = (data: string): { nodeId: string; motion: boolean }[] | null => {
   try {
-    // Expected format: "node1:gun:1" or "node2:motion:0"
-    const parts = data.trim().split(':');
-    if (parts.length !== 3) return null;
-
-    const [nodeId, alertType, valueStr] = parts;
-    const value = parseInt(valueStr, 10);
-
-    if (isNaN(value)) return null;
-
-    // Validate alert type
-    const validAlertTypes: AlertType[] = ['gun', 'footsteps', 'motion', 'whisper', 'suspicious_activity', 'drone', 'help'];
-    if (!validAlertTypes.includes(alertType as AlertType)) return null;
-
-    return {
-      nodeId: nodeId.toLowerCase(),
-      alertType: alertType as AlertType,
-      value
-    };
+    // Remove brackets and split by spaces
+    const cleanData = data.trim().replace(/[\[\]]/g, '');
+    const nodePairs = cleanData.split(' ').filter(pair => pair.length > 0);
+    
+    const results: { nodeId: string; motion: boolean }[] = [];
+    
+    for (const pair of nodePairs) {
+      const parts = pair.split(':');
+      if (parts.length === 2) {
+        const nodeId = parts[0].toLowerCase();
+        const value = parseInt(parts[1], 10);
+        
+        if (!isNaN(value) && (value === 0 || value === 1)) {
+          results.push({
+            nodeId,
+            motion: value === 1
+          });
+        }
+      }
+    }
+    
+    return results.length > 0 ? results : null;
   } catch (error) {
-    console.error('Error parsing LoRaWAN data:', error);
+    console.error('Error parsing motion data:', error);
     return null;
   }
 };

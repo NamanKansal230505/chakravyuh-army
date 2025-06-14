@@ -6,6 +6,7 @@ import AlertsList from "@/components/AlertsList";
 import ActivityLog from "@/components/ActivityLog";
 import DeploymentMap from "@/components/DeploymentMap";
 import NodeDetails from "@/components/NodeDetails";
+import NodeManagement from "@/components/NodeManagement";
 import AlertSound from "@/components/AlertSound";
 import AlertPopup from "@/components/AlertPopup";
 import { toast } from "@/components/ui/use-toast";
@@ -32,7 +33,8 @@ const Index = () => {
     refreshPorts,
     shouldPlayAlertSound,
     alertSeverity,
-    handleSoundPlayed
+    handleSoundPlayed,
+    updateNode
   } = useSerial();
 
   // Handle node selection
@@ -115,7 +117,7 @@ const Index = () => {
         <header className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold gradient-heading">Chakravyuh</h1>
-            <p className="text-muted-foreground">Army Perimeter Defense System - LoRaWAN Edition</p>
+            <p className="text-muted-foreground">Army Perimeter Defense System - LoRaWAN Motion Detection</p>
           </div>
         </header>
 
@@ -134,13 +136,16 @@ const Index = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="md:col-span-3">
+          <div className="md:col-span-2">
             <DeploymentMap
               nodes={nodes}
               connections={connections}
               onSelectNode={handleSelectNode}
               selectedNodeId={selectedNode?.id || null}
             />
+          </div>
+          <div className="md:col-span-1">
+            <NodeManagement nodes={nodes} onUpdateNode={updateNode} />
           </div>
           <div className="md:col-span-1">
             <NodeDetails node={selectedNode} />

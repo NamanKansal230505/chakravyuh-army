@@ -1,7 +1,6 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Node, Alert, NetworkConnection, NetworkStatus, AlertType } from '@/lib/types';
-import { serialComm, parseLoRaWANData, getDefaultNetworkStatus, getDefaultConnections } from '@/lib/serialCommunication';
+import { serialComm, parseMotionData, getDefaultNetworkStatus, getDefaultConnections } from '@/lib/serialCommunication';
 
 interface SerialPortInfo {
   port: SerialPort;
@@ -27,6 +26,7 @@ interface UseSerialReturn {
   shouldPlayAlertSound: boolean;
   alertSeverity: 'critical' | 'warning' | 'info';
   handleSoundPlayed: () => void;
+  updateNode: (nodeId: string, updates: Partial<Node>) => void;
 }
 
 export function useSerial(): UseSerialReturn {
@@ -104,90 +104,91 @@ export function useSerial(): UseSerialReturn {
     setShouldPlayAlertSound(false);
   }, []);
 
-  // Process incoming serial data
+  // Update node function
+  const updateNode = useCallback((nodeId: string, updates: Partial<Node>) => {
+    setNodes(prevNodes => 
+      prevNodes.map(node => 
+        node.id === nodeId ? { ...node, ...updates } : node
+      )
+    );
+  }, []);
+
+  // Process incoming serial data for motion detection
   const handleSerialData = useCallback((data: string) => {
     console.log('Received serial data:', data);
     
-    const parsed = parseLoRaWANData(data);
+    const parsed = parseMotionData(data);
     if (!parsed) return;
 
-    const { nodeId, alertType, value } = parsed;
+    // Process each node's motion data
+    parsed.forEach(({ nodeId, motion }) => {
+      setNodes(prevNodes => {
+        const existingNodeIndex = prevNodes.findIndex(n => n.id === nodeId);
+        
+        if (existingNodeIndex >= 0) {
+          // Update existing node
+          const updatedNodes = [...prevNodes];
+          updatedNodes[existingNodeIndex] = {
+            ...updatedNodes[existingNodeIndex],
+            alerts: {
+              gun: false,
+              footsteps: false,
+              motion: motion,
+              whisper: false,
+              suspicious_activity: false,
+              drone: false,
+              help: false
+            },
+            lastActivity: new Date(),
+            status: 'online' as const
+          };
+          return updatedNodes;
+        } else {
+          // Create new node with default coordinates
+          const newNode: Node = {
+            id: nodeId,
+            name: `Node #${nodeId.replace('node', '')}`,
+            sector: `Sector ${nodeId.replace('node', '').toUpperCase()}`,
+            status: 'online',
+            battery: 100,
+            signalStrength: 95,
+            lastActivity: new Date(),
+            location: { 
+              lat: 21 + (Math.random() * 0.01), 
+              lng: 79 + (Math.random() * 0.01) 
+            },
+            type: 'standard',
+            alerts: {
+              gun: false,
+              footsteps: false,
+              motion: motion,
+              whisper: false,
+              suspicious_activity: false,
+              drone: false,
+              help: false
+            }
+          };
+          return [...prevNodes, newNode];
+        }
+      });
 
-    // Update or create node
-    setNodes(prevNodes => {
-      const existingNodeIndex = prevNodes.findIndex(n => n.id === nodeId);
-      
-      if (existingNodeIndex >= 0) {
-        // Update existing node
-        const updatedNodes = [...prevNodes];
-        updatedNodes[existingNodeIndex] = {
-          ...updatedNodes[existingNodeIndex],
-          alerts: {
-            ...updatedNodes[existingNodeIndex].alerts,
-            [alertType]: value === 1
-          },
-          lastActivity: new Date(),
-          status: 'online' as const
+      // Create alert if motion is detected
+      if (motion) {
+        const newAlert: Alert = {
+          id: `${nodeId}-motion-${Date.now()}`,
+          type: 'motion' as AlertType,
+          nodeId,
+          timestamp: new Date(),
+          description: 'Motion detected',
+          severity: 'info',
+          acknowledged: false
         };
-        return updatedNodes;
-      } else {
-        // Create new node
-        const newNode: Node = {
-          id: nodeId,
-          name: `Node #${nodeId.replace('node', '')}`,
-          sector: `Sector ${nodeId.replace('node', '').toUpperCase()}`,
-          status: 'online',
-          battery: 100,
-          signalStrength: 95,
-          lastActivity: new Date(),
-          location: { 
-            lat: 21 + (Math.random() * 0.01), 
-            lng: 79 + (Math.random() * 0.01) 
-          },
-          type: 'standard',
-          alerts: {
-            gun: false,
-            footsteps: false,
-            motion: false,
-            whisper: false,
-            suspicious_activity: false,
-            drone: false,
-            help: false,
-            [alertType]: value === 1
-          }
-        };
-        return [...prevNodes, newNode];
+
+        setAlerts(prev => [newAlert, ...prev.slice(0, 99)]); // Keep last 100 alerts
+        setAlertSeverity('info');
+        setShouldPlayAlertSound(true);
       }
     });
-
-    // Create alert if value is 1
-    if (value === 1) {
-      const alertSeverityMap: Record<AlertType, 'critical' | 'warning' | 'info'> = {
-        gun: 'critical',
-        footsteps: 'warning',
-        motion: 'info',
-        whisper: 'warning',
-        suspicious_activity: 'critical',
-        drone: 'warning',
-        help: 'critical'
-      };
-
-      const severity = alertSeverityMap[alertType];
-      
-      const newAlert: Alert = {
-        id: `${nodeId}-${alertType}-${Date.now()}`,
-        type: alertType,
-        nodeId,
-        timestamp: new Date(),
-        description: `${alertType.replace('_', ' ')} detected`,
-        severity,
-        acknowledged: false
-      };
-
-      setAlerts(prev => [newAlert, ...prev.slice(0, 99)]); // Keep last 100 alerts
-      setAlertSeverity(severity);
-      setShouldPlayAlertSound(true);
-    }
   }, []);
 
   // Setup serial data listener
@@ -228,6 +229,7 @@ export function useSerial(): UseSerialReturn {
     refreshPorts,
     shouldPlayAlertSound,
     alertSeverity,
-    handleSoundPlayed
+    handleSoundPlayed,
+    updateNode
   };
 }

@@ -14,6 +14,8 @@ class SerialCommunication {
   private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
   private isConnected = false;
   private onDataCallback: ((data: string) => void) | null = null;
+  private isBootSequenceComplete = false;
+  private dataBuffer = '';
 
   // Check if Web Serial API is supported
   isSupported(): boolean {
@@ -89,6 +91,8 @@ class SerialCommunication {
       if (this.port.readable) {
         this.reader = this.port.readable.getReader();
         this.isConnected = true;
+        this.isBootSequenceComplete = false; // Reset boot sequence flag
+        this.dataBuffer = ''; // Reset data buffer
         this.startReading();
         return true;
       }
@@ -115,9 +119,42 @@ class SerialCommunication {
       }
 
       this.isConnected = false;
+      this.isBootSequenceComplete = false;
+      this.dataBuffer = '';
     } catch (error) {
       console.error('Error disconnecting from serial port:', error);
     }
+  }
+
+  // Check if line indicates end of ESP32 boot sequence
+  private isBootSequenceEnd(line: string): boolean {
+    // Look for patterns that indicate boot sequence is complete
+    const bootEndPatterns = [
+      /entry 0x[0-9a-fA-F]+/,
+      /CPU startup complete/,
+      /Application startup complete/,
+      /Ready to receive data/
+    ];
+    
+    return bootEndPatterns.some(pattern => pattern.test(line));
+  }
+
+  // Check if line contains ESP32 boot messages to ignore
+  private isBootMessage(line: string): boolean {
+    const bootPatterns = [
+      /^ets /,
+      /^rst:/,
+      /^configsip:/,
+      /^clk_drv:/,
+      /^mode:/,
+      /^load:/,
+      /^ho \d+ tail/,
+      /^entry 0x/,
+      /Brownout detector/,
+      /SPIWP:/
+    ];
+    
+    return bootPatterns.some(pattern => pattern.test(line));
   }
 
   // Start reading serial data
@@ -132,8 +169,43 @@ class SerialCommunication {
         
         if (value) {
           const text = new TextDecoder().decode(value);
-          if (this.onDataCallback) {
-            this.onDataCallback(text);
+          this.dataBuffer += text;
+          
+          // Process complete lines
+          const lines = this.dataBuffer.split('\n');
+          this.dataBuffer = lines.pop() || ''; // Keep incomplete line in buffer
+          
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) continue;
+            
+            console.log('Raw serial line:', trimmedLine);
+            
+            // Check if boot sequence is complete
+            if (!this.isBootSequenceComplete) {
+              if (this.isBootMessage(trimmedLine)) {
+                console.log('Ignoring boot message:', trimmedLine);
+                continue;
+              }
+              
+              if (this.isBootSequenceEnd(trimmedLine)) {
+                console.log('Boot sequence complete, starting data processing');
+                this.isBootSequenceComplete = true;
+                continue;
+              }
+              
+              // If we see motion data pattern, consider boot complete
+              if (trimmedLine.includes('[') && trimmedLine.includes('node')) {
+                console.log('Motion data detected, boot sequence complete');
+                this.isBootSequenceComplete = true;
+              }
+            }
+            
+            // Only process data after boot sequence is complete
+            if (this.isBootSequenceComplete && this.onDataCallback) {
+              console.log('Processing motion data:', trimmedLine);
+              this.onDataCallback(trimmedLine);
+            }
           }
         }
       }
